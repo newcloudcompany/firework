@@ -66,7 +66,6 @@ func createIpamSqliteDatabase(pathname string, cidr string) (*sql.DB, error) {
 	for ip := prefix.Addr().Next().Next(); prefix.Contains(ip); ip = ip.Next() {
 		// Transform the IP into the CIDR so that the string representation has the slash suffix
 		addr := fmt.Sprintf("%s/%d", ip.String(), prefix.Bits())
-		// log.Printf("Executing: INSERT INTO ips (addr, is_free) VALUES (%s, %d)\n", addr, 1)
 		_, err := db.Exec("INSERT INTO ips (addr, is_free) VALUES (?, ?)", addr, 1)
 		if err != nil {
 			return nil, err

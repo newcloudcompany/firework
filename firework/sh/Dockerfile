@@ -6,7 +6,7 @@ WORKDIR /firework
 
 RUN chmod 1777 /tmp
 
-RUN echo -n "deb http://deb.debian.org/debian/ buster main\ndeb http://security.debian.org/debian-security buster/updates main" > /etc/apt/sources.list
+RUN echo -n "deb http://deb.debian.org/debian/ bullseye main\ndeb http://security.debian.org/debian-security bullseye/updates main" > /etc/apt/sources.list
 
 RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y \
     iproute2 \

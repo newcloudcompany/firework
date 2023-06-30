@@ -3,14 +3,11 @@ package start
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
 
 func createRootFsCopy(rootFsPath, vmDataDirPath, id string) (string, error) {
-	log.Println("Creating rootfs copy...")
-
 	vmRootFsPath := filepath.Join(vmDataDirPath, fmt.Sprintf("%s.ext4", id))
 	sourceFile, err := os.Open(rootFsPath)
 	if err != nil {

@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/jlkiri/firework/sources"
+	"golang.org/x/exp/slog"
 )
 
 func prepareEnvironment() error {
@@ -55,30 +55,32 @@ func prepareEnvironment() error {
 
 func ensureKernel(kernelUrl, kernelPath string) error {
 	if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
-		log.Println("Downloading kernel...")
 		err := download(kernelUrl, kernelPath)
 		if err != nil {
 			return err
 		}
+
 		err = os.Chmod(kernelPath, 0755)
 		if err != nil {
 			return err
 		}
+		slog.Info("Downloaded kernel.")
 	}
+
 	return nil
 }
 
 func ensureRootFs(rootFsUrl, rootFsDir string) error {
 	if _, err := os.Stat(filepath.Join(rootFsDir, "rootfs.ext4.gz")); os.IsNotExist(err) {
-		log.Println("Downloading rootfs...")
+
 		err := download(rootFsUrl, filepath.Join(rootFsDir, "rootfs.ext4.gz"))
 		if err != nil {
 			return err
 		}
+		slog.Info("Downloaded base rootfs archive.")
 	}
 
 	if _, err := os.Stat(filepath.Join(rootFsDir, "rootfs.ext4")); os.IsNotExist(err) {
-		log.Println("Decompressing rootfs...")
 		gzippedFile, err := os.ReadFile(filepath.Join(rootFsDir, "rootfs.ext4.gz"))
 		if err != nil {
 			return err
@@ -94,6 +96,7 @@ func ensureRootFs(rootFsUrl, rootFsDir string) error {
 		if err != nil {
 			return err
 		}
+		slog.Info("Unarchived base rootfs.")
 	}
 
 	return nil
@@ -106,11 +109,13 @@ func readConfigFromJson(path string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
 	var config Config
 	err = json.Unmarshal(file, &config)
 	if err != nil {
 		return Config{}, err
 	}
+
 	return config, nil
 }
 
@@ -120,8 +125,6 @@ func download(url string, dest string) error {
 		return err
 	}
 	defer out.Close()
-
-	fmt.Println("Downloading", url, "to", dest)
 
 	resp, err := http.Get(url)
 	if err != nil {

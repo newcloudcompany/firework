@@ -14,6 +14,7 @@ import (
 	"github.com/jlkiri/firework/internal/vm"
 	"github.com/jlkiri/firework/sources"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slog"
 )
 
 var cacheDir = filepath.Join(sources.DataDir, "cache")
@@ -40,8 +41,6 @@ func NewStartCommand() *cobra.Command {
 			return runStart()
 		},
 	}
-
-	// startCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.firework.yaml)")
 
 	return startCmd
 }
@@ -75,34 +74,45 @@ func runStart() error {
 	if err := prepareEnvironment(); err != nil {
 		return err
 	}
+	slog.Debug("Prepared environment for execution.")
 
 	ipamDb, err := ipam.NewIPAM(dbPath, "10.0.0.240/28")
 	if err != nil {
 		return err
 	}
+	slog.Debug("Created and populated IPAM database.")
 
 	bridge, err := network.NewBridgeNetwork()
 	if err != nil {
 		return err
 	}
+	slog.Debug("Created a bridge network.")
 
 	config, err := readConfigFromJson("config.json")
 	if err != nil {
 		return err
 	}
+	slog.Debug("Read config.json.")
 
 	ctx := context.TODO()
-
 	mg, err := createMachineGroup(ctx, config.Nodes, bridge, ipamDb)
 	if err != nil {
-		return fmt.Errorf("failed to run VMM: %w", err)
+		return fmt.Errorf("failed to create machine group: %w", err)
 	}
+	slog.Debug("Created machine group from config.")
+
+	if err := mg.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start machine group: %w", err)
+	}
+
+	vm.InstallSignalHandlers(ctx, mg)
+	slog.Debug("Installed signal handlers.")
 
 	if err := mg.Wait(ctx); err != nil {
-		log.Println("An error occurred while waiting for the Firecracker VMM to exit: ", err)
+		return fmt.Errorf("an error occurred while waiting for the machine group to exit: %w", err)
 	}
 
-	log.Println("Gracefully shutdown")
+	slog.Info("Graceful shutdown successful.")
 
 	return nil
 }
@@ -114,35 +124,35 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 	mg := vm.NewMachineGroup()
 
 	for _, node := range nodes {
+		cid := generateCid()
 		id := uuid.NewString()
+
+		slog.Info("Generated CID", "node", node.Name, "cid", cid)
+		slog.Info("Generated ID", "node", node.Name, "id", id)
 
 		tap, err := bridge.CreateTapDevice(id)
 		if err != nil {
 			return nil, err
 		}
 
-		log.Println("Allocating a free IPv4 address...")
 		addr, err := ipamDb.AllocateFreeIPAddress(id)
 		if err != nil {
 			return nil, err
 		}
-
-		log.Println("Allocated:", addr)
+		slog.Info("Allocated free IP address", "node", node.Name, "addr", addr)
 
 		rootFsCopyPath, err := createRootFsCopy(rootFsPath, vmDataDir, id)
 		if err != nil {
 			return nil, err
 		}
+		slog.Debug("Created a copy of base rootfs", "node", node.Name)
 
 		socketPath := filepath.Join(vmDataDir, fmt.Sprintf("%s.sock", id))
 		fifoPath := filepath.Join(miscDir, fmt.Sprintf("%s.fifo", id))
-
 		ipConfig, err := vm.NewMachineIpConfig(bridge.GetIPAddr(), addr, tap.Name)
 		if err != nil {
 			return nil, err
 		}
-
-		cid := generateCid()
 
 		machine, err := vm.CreateMachine(ctx, vm.MachineOptions{
 			RootFsPath:      rootFsCopyPath,
@@ -159,13 +169,8 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 		}
 
 		mg.AddMachine(machine, cid)
+		slog.Debug("Created and added the machine config to the machine group")
 	}
-
-	if err := mg.Start(ctx); err != nil {
-		return nil, err
-	}
-
-	vm.InstallSignalHandlers(ctx, mg)
 
 	return mg, nil
 }

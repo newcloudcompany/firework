@@ -2,13 +2,12 @@ package network
 
 import (
 	"fmt"
-	"log"
 	"net"
 
 	"github.com/vishvananda/netlink"
 )
 
-func createFirecrackerBridge(name string) (*netlink.Bridge, error) {
+func createBridge(name string) (*netlink.Bridge, error) {
 	la := netlink.NewLinkAttrs()
 	la.Name = name
 	bridge := &netlink.Bridge{LinkAttrs: la}
@@ -20,7 +19,7 @@ func createFirecrackerBridge(name string) (*netlink.Bridge, error) {
 	return bridge, nil
 }
 
-func createFirecrackerTap(name string) (*netlink.Tuntap, error) {
+func createTapDevice(name string) (*netlink.Tuntap, error) {
 	la := netlink.NewLinkAttrs()
 	la.Name = name
 	dev := &netlink.Tuntap{
@@ -61,13 +60,11 @@ func NewBridgeNetwork() (*BridgeNetwork, error) {
 			return nil, fmt.Errorf("failed to set up iptables: %w", err)
 		}
 
-		log.Println("Updated iptables")
-
 		// Assume that the route to VM_SUBNET is already added and iptables rules are already set up
 		return &BridgeNetwork{br, addrs[0].IP}, nil
 	}
 
-	bridge, err := createFirecrackerBridge(VM_BRIDGE_NAME)
+	bridge, err := createBridge(VM_BRIDGE_NAME)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bridge %s: %w", VM_BRIDGE_NAME, err)
 	}
@@ -90,7 +87,7 @@ func NewBridgeNetwork() (*BridgeNetwork, error) {
 
 func (n *BridgeNetwork) CreateTapDevice(id string) (*netlink.Tuntap, error) {
 	ifaceName := fmt.Sprintf("%s-%s", VM_TAP_PREFIX, id)
-	tap, err := createFirecrackerTap(ifaceName)
+	tap, err := createTapDevice(ifaceName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tap %s: %w", ifaceName, err)
 	}

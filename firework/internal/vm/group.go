@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 
 	firecracker "github.com/firecracker-microvm/firecracker-go-sdk"
+	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -39,25 +39,11 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 				return err
 			}
 
-			type Metadata map[string]interface{}
-
-			jsonMetadata := fmt.Sprintf(`
-			{
-				"latest": {
-					"meta-data": {
-						"cid": "%s"
-					}
-				}
-			}
-			`, strconv.Itoa(int(machine.cid)))
-
-			var metadata Metadata
-
-			err := json.Unmarshal([]byte(jsonMetadata), &metadata)
+			metadata, err := createMetadata(machine.cid)
 			if err != nil {
 				return err
 			}
-
+			
 			if err := machine.inner.SetMetadata(ctx, metadata); err != nil {
 				return err
 			}
@@ -92,17 +78,36 @@ func (mg *MachineGroup) AddMachine(machine *firecracker.Machine, cid uint32) err
 	return nil
 }
 
+func createMetadata(cid uint32) (map[string]interface{}, error) {
+	jsonMetadata := fmt.Sprintf(`
+	{
+		"latest": {
+			"meta-data": {
+				"cid": "%s"
+			}
+		}
+	}
+	`, strconv.Itoa(int(cid)))
+
+	var metadata map[string]interface{}
+	err := json.Unmarshal([]byte(jsonMetadata), &metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return metadata, nil
+}
+
 func InstallSignalHandlers(ctx context.Context, mg *MachineGroup) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	for sig := range c {
-		log.Printf("Caught signal: %s, requesting clean shutdown", sig.String())
+		slog.Info("Caught signal: %s, requesting clean shutdown", sig.String())
 		if sig == syscall.SIGTERM || sig == os.Interrupt {
 			if err := mg.Shutdown(ctx); err != nil {
-				log.Println("An error occurred while shutting down Firecracker VMM", err)
+				slog.Error("an error occurred while shutting down Firecracker VMM", err)
 			}
-			log.Printf("Clean shutdown successful!")
 			break
 		}
 	}
