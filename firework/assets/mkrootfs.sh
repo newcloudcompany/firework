@@ -5,63 +5,43 @@ set -euo pipefail
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $script_dir
 
-source vars.sh
-
 mount_dir="$script_dir/rootfs"
-rootfs="$rootfs_dir/rootfs.ext4"
-base_rootfs="$downloads_dir/rootfs.tar.xz"
-tmp_rootfs="$script_dir/tmp_rootfs"
 
-rm -rf "$rootfs" || true
+output_dir="$script_dir"
+output_ext4_path="$output_dir/rootfs.ext4"
+output_gzip_path="$output_dir/rootfs.ext4.gz"
+
+rm -rf "$mount_dir" || true
 
 function cleanup {
     # Unmount the disk image and remove the temporary mount directory   
     {
         umount --lazy "$mount_dir" &> /dev/null || true
         rm -rf "$mount_dir"
-        rm -rf "$tmp_rootfs"
     } || true
 }
 
 cleanup
 trap cleanup EXIT
 
-mkdir -p "$rootfs_dir"
-
 # Create an empty file
-echo "Allocating an empty 2GB file..."
-truncate -s 2G "$rootfs"
+truncate -s 2G "$output_ext4_path" &> /dev/null
+echo "Allocated an empty 2GB file..."
 
 # Create an ext4 filesystem on the file
-echo "Creating an ext4 filesystem on the file..."
-mkfs -t ext4 "$rootfs"
+mkfs -t ext4 "$output_ext4_path" &> /dev/null
+echo "Created an ext4 filesystem on the file..."
 
 mkdir -p $mount_dir
-mount -o loop "$rootfs" $mount_dir
+mount -o loop "$output_ext4_path" $mount_dir
 
-echo "Unpacking the base rootfs image to the mount dir..."
-tar -xf "$base_rootfs" -C "$mount_dir"
-
-echo "Pre-installing programs in the base rootfs image with Docker..."
-
-# if [[ ! -f "$mount_dir/bin/sh" ]]; then
-#     echo "/bin/sh not found"
-#     exit 1
-# fi
-
-# mkdir -p "$tmp_rootfs"
 buildctl build --no-cache --frontend=dockerfile.v0 --local context=. --local dockerfile=. --output type=local,dest="$mount_dir"
-# cp -r /debian-chroot $mount_dir
-
-# cp --remove-destination -r "$tmp_rootfs"/* "$mount_dir"
+echo "Pre-installed programs in the base rootfs image with buildctl..."
 
 cp --remove-destination init "$mount_dir/sbin/init"
 
-# Zip the rootfs
-echo "Zipping the rootfs..."
 umount --lazy "$mount_dir"
 rm -rf "$mount_dir"
 
-gzip -c "$rootfs" > "$HOME/rootfs.ext4.gz"
-
-echo "Done."
+gzip -c "$output_ext4_path" > "$output_gzip_path" &> /dev/null
+echo "Gzipped the rootfs to $output_gzip_path..."

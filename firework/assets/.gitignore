@@ -1,3 +1,4 @@
-rootfs
-tmp_rootfs
-kernel
+downloads
+debian-bullseye-rootfs
+rootfs.ext4
+rootfs.ext4.gz

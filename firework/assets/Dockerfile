@@ -1,12 +1,24 @@
+# syntax=docker/dockerfile:1.3-labs
+
 FROM scratch
 
-ADD rootfs /
+ADD debian-bullseye-rootfs /
 
 WORKDIR /firework
 
+# apt doesn't work properly without this somehow
 RUN chmod 1777 /tmp
 
-RUN echo -n "deb http://deb.debian.org/debian/ bullseye main\ndeb http://security.debian.org/debian-security bullseye/updates main" > /etc/apt/sources.list
+COPY <<EOF /etc/apt/sources.list
+deb http://deb.debian.org/debian/ bullseye main
+deb-src http://deb.debian.org/debian/ bullseye main
+
+deb http://security.debian.org/debian-security bullseye-security main
+deb-src http://security.debian.org/debian-security bullseye-security main
+
+deb http://deb.debian.org/debian/ bullseye-updates main
+deb-src http://deb.debian.org/debian/ bullseye-updates main
+EOF
 
 RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y \
     iproute2 \
@@ -19,20 +31,4 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y \
     apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Generate guest SSH keys
-# RUN ssh-keygen -A
-
-# RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
-
-# configure sshd
-# RUN sed -i 's/^#\(PermitRootLogin\) .*/\1 yes/' /etc/ssh/sshd_config && \
-#     sed -i 's/^#\(PasswordAuthentication\) .*/\1 no/' /etc/ssh/sshd_config
-
-# COPY config config
-# COPY kernel kernel
-# COPY vm vm
-# COPY macgen.py .
-# COPY *.sh .
-# COPY Dockerfile .
-# COPY .gitignore .
 COPY init /sbin/init
