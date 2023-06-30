@@ -14,6 +14,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt update && apt install -y \
     curl \
     dnsutils \
     iputils-ping \
+    procps \
     cpu-checker && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
