@@ -1,0 +1,8 @@
+[package]
+name = "ptyca"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rustix = { version = "0.37.20", features = ["pty", "termios", "process"] }
+

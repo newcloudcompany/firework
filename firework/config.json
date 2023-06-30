@@ -1,0 +1,10 @@
+{
+    "nodes": [
+        {
+            "name": "gateway"
+        },
+        {
+            "name": "worker"
+        }
+    ]
+}
