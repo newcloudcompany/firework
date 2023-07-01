@@ -118,11 +118,8 @@ func runStart() error {
 }
 
 func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
-
-	wd, _ := os.Getwd()
-
 	kernelPath := filepath.Join(kernelDir, "vmlinux")
-	rootFsPath := filepath.Join(wd, "assets", "rootfs.squashfs")
+	rootFsPath := filepath.Join(rootFsDir, "rootfs.squashfs")
 
 	mg := vm.NewMachineGroup()
 

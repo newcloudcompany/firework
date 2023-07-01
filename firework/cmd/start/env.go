@@ -1,8 +1,6 @@
 package start
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -45,7 +43,7 @@ func prepareEnvironment() error {
 		return err
 	}
 
-	err = ensureRootFs(sources.BaseRootFsUrl, rootFsDir)
+	err = ensureSquashFs(sources.SquashFsUrl, rootFsDir)
 	if err != nil {
 		return err
 	}
@@ -70,33 +68,14 @@ func ensureKernel(kernelUrl, kernelPath string) error {
 	return nil
 }
 
-func ensureRootFs(rootFsUrl, rootFsDir string) error {
-	if _, err := os.Stat(filepath.Join(rootFsDir, "rootfs.ext4.gz")); os.IsNotExist(err) {
+func ensureSquashFs(rootFsUrl, rootFsDir string) error {
+	if _, err := os.Stat(filepath.Join(rootFsDir, "rootfs.squashfs")); os.IsNotExist(err) {
 
-		err := download(rootFsUrl, filepath.Join(rootFsDir, "rootfs.ext4.gz"))
+		err := download(rootFsUrl, filepath.Join(rootFsDir, "rootfs.squashfs"))
 		if err != nil {
 			return err
 		}
-		slog.Info("Downloaded base rootfs archive.")
-	}
-
-	if _, err := os.Stat(filepath.Join(rootFsDir, "rootfs.ext4")); os.IsNotExist(err) {
-		gzippedFile, err := os.ReadFile(filepath.Join(rootFsDir, "rootfs.ext4.gz"))
-		if err != nil {
-			return err
-		}
-
-		file, err := os.Create(filepath.Join(rootFsDir, "rootfs.ext4"))
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		err = decompress(file, gzippedFile)
-		if err != nil {
-			return err
-		}
-		slog.Info("Unarchived base rootfs.")
+		slog.Info("Downloaded rootfs squashfs image.")
 	}
 
 	return nil
@@ -138,25 +117,6 @@ func download(url string, dest string) error {
 	}
 
 	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func decompress(dest io.Writer, data []byte) error {
-	// Create a new bytes reader from the compressed data
-	r := bytes.NewReader(data)
-
-	// Create a new gzip reader from the bytes reader
-	gzipReader, err := gzip.NewReader(r)
-	if err != nil {
-		return fmt.Errorf("error creating gzip reader: %v", err)
-	}
-	defer gzipReader.Close()
-
-	_, err = io.Copy(dest, gzipReader)
 	if err != nil {
 		return err
 	}
