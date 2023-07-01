@@ -49,7 +49,7 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 	cfg := firecracker.Config{
 		SocketPath:      opts.SocketPath,
 		KernelImagePath: opts.KernelImagePath,
-		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd",
+		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd init=/sbin/overlay-init",
 		MachineCfg: models.MachineConfiguration{
 			VcpuCount:  firecracker.Int64(2),
 			MemSizeMib: firecracker.Int64(1024),

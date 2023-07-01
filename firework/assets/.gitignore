@@ -2,3 +2,4 @@ downloads
 debian-bullseye-rootfs
 rootfs.ext4
 rootfs.ext4.gz
+rootfs.squashfs

@@ -5,43 +5,36 @@ set -euo pipefail
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $script_dir
 
-mount_dir="$script_dir/rootfs"
+rootfs_base="debian-bullseye-rootfs"
+squashfs_img="rootfs.squashfs"
+packages="procps iproute2 ca-certificates curl dnsutils iputils-ping cpu-checker"
 
-output_dir="$script_dir"
-output_ext4_path="$output_dir/rootfs.ext4"
-output_gzip_path="$output_dir/rootfs.ext4.gz"
+mkdir -p "$rootfs_base"
 
-rm -rf "$mount_dir" || true
-
-function cleanup {
-    # Unmount the disk image and remove the temporary mount directory   
-    {
-        umount --lazy "$mount_dir" &> /dev/null || true
-        rm -rf "$mount_dir"
-    } || true
+function debootstrap_rootfs {
+    if [[ ! -e "$rootfs_base" ]]; then
+        echo "Creating debian bullseye rootfs..."
+        debootstrap \
+            --arch=amd64 \
+            --variant=minbase \
+            --include=${packages// /,} \
+            bullseye "$rootfs_base" \
+            http://deb.debian.org/debian/    
+    fi
+    
+    echo "Copying init to the rootfs..."
+    mkdir -p "$rootfs_base/overlay" "$rootfs_base/mnt" "$rootfs_base/rom"
+    cp init "$rootfs_base/sbin/init"
+    cp overlay-init "$rootfs_base/sbin/overlay-init"
 }
 
-cleanup
-trap cleanup EXIT
+function mkroot_squashfs {
+    if [[ ! -e "$squashfs_img" ]]; then
+        echo "Creating squashfs image of the debian rootfs..."
+        mksquashfs "$rootfs_base" "$squashfs_img" -noappend
+    fi
+}
 
-# Create an empty file
-truncate -s 2G "$output_ext4_path" &> /dev/null
-echo "Allocated an empty 2GB file..."
+time debootstrap_rootfs
+time mkroot_squashfs
 
-# Create an ext4 filesystem on the file
-mkfs -t ext4 "$output_ext4_path" &> /dev/null
-echo "Created an ext4 filesystem on the file..."
-
-mkdir -p $mount_dir
-mount -o loop "$output_ext4_path" $mount_dir
-
-buildctl build --no-cache --frontend=dockerfile.v0 --local context=. --local dockerfile=. --output type=local,dest="$mount_dir"
-echo "Pre-installed programs in the base rootfs image with buildctl..."
-
-cp --remove-destination init "$mount_dir/sbin/init"
-
-umount --lazy "$mount_dir"
-rm -rf "$mount_dir"
-
-gzip -c "$output_ext4_path" > "$output_gzip_path" &> /dev/null
-echo "Gzipped the rootfs to $output_gzip_path..."

@@ -118,8 +118,11 @@ func runStart() error {
 }
 
 func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
+
+	wd, _ := os.Getwd()
+
 	kernelPath := filepath.Join(kernelDir, "vmlinux")
-	rootFsPath := filepath.Join(rootFsDir, "rootfs.ext4")
+	rootFsPath := filepath.Join(wd, "assets", "rootfs.squashfs")
 
 	mg := vm.NewMachineGroup()
 
@@ -141,11 +144,11 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 		}
 		slog.Info("Allocated free IP address", "node", node.Name, "addr", addr)
 
-		rootFsCopyPath, err := createRootFsCopy(rootFsPath, vmDataDir, id)
-		if err != nil {
-			return nil, err
-		}
-		slog.Debug("Created a copy of base rootfs", "node", node.Name)
+		// rootFsCopyPath, err := createRootFsCopy(rootFsPath, vmDataDir, id)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// slog.Debug("Created a copy of base rootfs", "node", node.Name)
 
 		socketPath := filepath.Join(vmDataDir, fmt.Sprintf("%s.sock", id))
 		fifoPath := filepath.Join(miscDir, fmt.Sprintf("%s.fifo", id))
@@ -155,7 +158,7 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 		}
 
 		machine, err := vm.CreateMachine(ctx, vm.MachineOptions{
-			RootFsPath:      rootFsCopyPath,
+			RootFsPath:      rootFsPath,
 			KernelImagePath: kernelPath,
 			SocketPath:      socketPath,
 			FifoPath:        fifoPath,

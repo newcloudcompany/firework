@@ -43,7 +43,7 @@ pub fn log_init() {
         .init();
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), InitError> {
     log_init();
 
     // can't put these as const unfortunately...
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Starting init...");
 
-    debug!("Mounting /dev/pts");
+    info!("Mounting /dev/pts");
     mkdir("/dev/pts", chmod_0755).ok();
     mount(
         Some("devpts"),
@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("mode=0620,gid=5,ptmxmode=666"),
     )?;
 
-    debug!("Mounting /dev/mqueue");
+    info!("Mounting /dev/mqueue");
     mkdir("/dev/mqueue", chmod_0755).ok();
     mount::<_, _, _, [u8]>(
         Some("mqueue"),
@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     )?;
 
-    debug!("Mounting /dev/shm");
+    info!("Mounting /dev/shm");
     mkdir("/dev/shm", chmod_1777).ok();
     mount::<_, _, _, [u8]>(
         Some("shm"),
@@ -91,7 +91,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     )?;
 
-    debug!("Mounting /dev/hugepages");
+    info!("Mounting /dev/hugepages");
     mkdir("/dev/hugepages", chmod_0755).ok();
     mount(
         Some("hugetlbfs"),
@@ -101,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("pagesize=2M"),
     )?;
 
-    debug!("Mounting /proc");
+    info!("Mounting /proc");
     mkdir("/proc", chmod_0555).ok();
     mount::<_, _, _, [u8]>(Some("proc"), "/proc", Some("proc"), common_mnt_flags, None)?;
     mount::<_, _, _, [u8]>(
@@ -112,11 +112,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     )?;
 
-    debug!("Mounting /sys");
+    info!("Mounting /sys");
     mkdir("/sys", chmod_0555).ok();
     mount::<_, _, _, [u8]>(Some("sys"), "/sys", Some("sysfs"), common_mnt_flags, None)?;
 
-    debug!("Mounting /run");
+    info!("Mounting /run");
     mkdir("/run", chmod_0755).ok();
     mount(
         Some("run"),
@@ -137,7 +137,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let common_cgroup_mnt_flags =
         MsFlags::MS_NODEV | MsFlags::MS_NOEXEC | MsFlags::MS_NOSUID | MsFlags::MS_RELATIME;
 
-    debug!("Mounting cgroup");
+    info!("Mounting cgroup");
     mount(
         Some("tmpfs"),
         "/sys/fs/cgroup",
@@ -146,7 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("mode=755"),
     )?;
 
-    debug!("Mounting cgroup2");
+    info!("Mounting cgroup2");
     mkdir("/sys/fs/cgroup/unified", chmod_0555)?;
     mount(
         Some("cgroup2"),
@@ -156,7 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("nsdelegate"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/net_cls,net_prio");
+    info!("Mounting /sys/fs/cgroup/net_cls,net_prio");
     mkdir("/sys/fs/cgroup/net_cls,net_prio", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -166,7 +166,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("net_cls,net_prio"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/hugetlb");
+    info!("Mounting /sys/fs/cgroup/hugetlb");
     mkdir("/sys/fs/cgroup/hugetlb", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -176,7 +176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("hugetlb"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/pids");
+    info!("Mounting /sys/fs/cgroup/pids");
     mkdir("/sys/fs/cgroup/pids", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -186,7 +186,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("pids"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/freezer");
+    info!("Mounting /sys/fs/cgroup/freezer");
     mkdir("/sys/fs/cgroup/freezer", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -196,7 +196,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("freezer"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/cpu,cpuacct");
+    info!("Mounting /sys/fs/cgroup/cpu,cpuacct");
     mkdir("/sys/fs/cgroup/cpu,cpuacct", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -206,7 +206,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("cpu,cpuacct"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/devices");
+    info!("Mounting /sys/fs/cgroup/devices");
     mkdir("/sys/fs/cgroup/devices", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -216,7 +216,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("devices"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/blkio");
+    info!("Mounting /sys/fs/cgroup/blkio");
     mkdir("/sys/fs/cgroup/blkio", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -226,7 +226,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("blkio"),
     )?;
 
-    debug!("Mounting cgroup/memory");
+    info!("Mounting cgroup/memory");
     mkdir("/sys/fs/cgroup/memory", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -236,7 +236,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("memory"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/perf_event");
+    info!("Mounting /sys/fs/cgroup/perf_event");
     mkdir("/sys/fs/cgroup/perf_event", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -246,7 +246,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("perf_event"),
     )?;
 
-    debug!("Mounting /sys/fs/cgroup/cpuset");
+    info!("Mounting /sys/fs/cgroup/cpuset");
     mkdir("/sys/fs/cgroup/cpuset", chmod_0555)?;
     mount(
         Some("cgroup"),
@@ -266,7 +266,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .expect("no user defined, this should not happen, please contact support!");
 
-    debug!("searching for user '{}", user);
+    info!("searching for user '{}", user);
 
     mkdir("/etc", chmod_0755).ok();
 
@@ -291,10 +291,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // }
 
     // Open a serial console
-    let mut serial = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open("/dev/ttyS0")?;
+    // let mut serial = OpenOptions::new()
+    //     .read(true)
+    //     .write(true)
+    //     .open("/dev/ttyS0")?;
 
     // Use HTTP client (reqwest) to call Firecracker MMDS endpoint to retrieve metadata that contains the CID for the vsock listener.
     // First it must call the token endpoint (/latest/api/token) with PUT method and X-metadata-token-ttl-seconds header to issue a session token.
@@ -313,28 +313,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = client
         .put(&format!("http://{}/latest/api/token", addr))
         .header("X-metadata-token-ttl-seconds", "21600")
-        .send()?
-        .text()?;
+        .send().expect("failed to send")
+        .text().expect("failed to text");
 
     info!("token: {}", token);
-    serial.write_all(token.as_bytes())?;
-    serial.flush()?;
+    // serial.write_all(token.as_bytes())?;
+    // serial.flush()?;
 
     let cid = client
         .get(&format!("http://{}/latest/meta-data/cid", addr))
         .header("X-metadata-token", token)
-        .send()?
-        .text()?;
+        .send().expect("failed to send")
+        .text().expect("failed to text");
 
     info!("cid: {}", cid);
-    serial.write_all(cid.as_bytes())?;
-    serial.flush()?;
+    // serial.write_all(cid.as_bytes())?;
+    // serial.flush()?;
     
     // Make cid u32.
-    let cid = cid.parse::<u32>()?;
+    let cid = cid.parse::<u32>().expect("failed to convert");
     let listener = VsockListener::bind_with_cid_port(cid, 10000)?;
-    serial.write_all(listener.local_addr().unwrap().to_string().as_bytes())?;
-    serial.flush()?;
+    // serial.write_all(listener.local_addr().unwrap().to_string().as_bytes())?;
+    // serial.flush()?;
 
     for stream in listener.incoming() {
         handle_conn(stream?).expect("wow");
@@ -378,22 +378,22 @@ fn reap_zombies(pid: i32, exit_status: &mut i32) -> bool {
                         }
                     }
                     WaitStatus::Stopped(child_pid, signal) => {
-                        debug!(
+                        info!(
                             "waitpid Stopped: surprising (pid: {}, signal: {})",
                             child_pid, signal
                         );
                     }
                     WaitStatus::PtraceEvent(child_pid, signal, event) => {
-                        debug!(
+                        info!(
                             "waitpid PtraceEvent: interesting (pid: {}, signal: {}, event: {})",
                             child_pid, signal, event
                         );
                     }
                     WaitStatus::PtraceSyscall(child_pid) => {
-                        debug!("waitpid PtraceSyscall: unfathomable (pid: {})", child_pid);
+                        info!("waitpid PtraceSyscall: unfathomable (pid: {})", child_pid);
                     }
                     WaitStatus::Continued(child_pid) => {
-                        debug!("waitpid Continue: not supposed to! (pid: {})", child_pid);
+                        info!("waitpid Continue: not supposed to! (pid: {})", child_pid);
                     }
                     WaitStatus::StillAlive => {
                         trace!("no more children to reap");
@@ -403,15 +403,15 @@ fn reap_zombies(pid: i32, exit_status: &mut i32) -> bool {
             }
             Err(e) => match e {
                 Errno::ECHILD => {
-                    debug!("no child to wait");
+                    info!("no child to wait");
                     break;
                 }
                 Errno::EINTR => {
-                    debug!("got EINTR waiting for pids, continuing...");
+                    info!("got EINTR waiting for pids, continuing...");
                     continue;
                 }
                 _ => {
-                    debug!("error calling waitpid: {}", e);
+                    info!("error calling waitpid: {}", e);
                     // TODO: return an error? handle it?
                     return false;
                 }
@@ -421,20 +421,76 @@ fn reap_zombies(pid: i32, exit_status: &mut i32) -> bool {
     child_exited
 }
 
+#[derive(Debug, thiserror::Error)]
+enum InitError {
+    #[error("couldn't mount {} onto {}, because: {}", source, target, error)]
+    Mount {
+        source: String,
+        target: String,
+        #[source]
+        error: nix::Error,
+    },
+
+    #[error("couldn't mkdir {}, because: {}", path, error)]
+    Mkdir {
+        path: String,
+        #[source]
+        error: nix::Error,
+    },
+
+    #[error("an unhandled error occurred: {}", 0)]
+    UnhandledNixError(#[from] nix::Error),
+
+    #[error("an unhandled IO error occurred: {}", 0)]
+    UnhandledIoError(#[from] io::Error),
+
+    #[error("an unhandled error occurred: {}", 0)]
+    UnhandledError(#[from] Error),
+}
+
 fn mount<P1: ?Sized + NixPath, P2: ?Sized + NixPath, P3: ?Sized + NixPath, P4: ?Sized + NixPath>(
     source: Option<&P1>,
     target: &P2,
     fstype: Option<&P3>,
     flags: MsFlags,
     data: Option<&P4>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    nix_mount(source, target, fstype, flags, data)?;
-    Ok(())
+) -> Result<(), InitError> {
+    nix_mount(source, target, fstype, flags, data).map_err(|error| InitError::Mount {
+        source: source
+            .map(|p| {
+                p.with_nix_path(|cs| {
+                    cs.to_owned()
+                        .into_string()
+                        .ok()
+                        .unwrap_or_else(|| String::new())
+                })
+                .unwrap_or_else(|_| String::new())
+            })
+            .unwrap_or_else(|| String::new()),
+        target: target
+            .with_nix_path(|cs| {
+                cs.to_owned()
+                    .into_string()
+                    .ok()
+                    .unwrap_or_else(|| String::new())
+            })
+            .unwrap_or_else(|_| String::new()),
+        error,
+    })
 }
 
-fn mkdir<P: ?Sized + NixPath>(path: &P, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
-    nix_mkdir(path, mode)?;
-    Ok(())
+fn mkdir<P: ?Sized + NixPath>(path: &P, mode: Mode) -> Result<(), InitError> {
+    nix_mkdir(path, mode).map_err(|error| InitError::Mkdir {
+        path: path
+            .with_nix_path(|cs| {
+                cs.to_owned()
+                    .into_string()
+                    .ok()
+                    .unwrap_or_else(|| String::new())
+            })
+            .unwrap_or_else(|_| String::new()),
+        error,
+    })
 }
 
 enum Msg {
