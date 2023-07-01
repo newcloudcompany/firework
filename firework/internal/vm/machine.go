@@ -15,6 +15,7 @@ type MachineOptions struct {
 	SocketPath      string
 	FifoPath        string
 	VsockPath       string
+	InitrdPath      string
 	Id              string
 	Cid             uint32
 	IpConfig        *machineIpConfig
@@ -50,6 +51,7 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 		SocketPath:      opts.SocketPath,
 		KernelImagePath: opts.KernelImagePath,
 		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd init=/sbin/overlay-init",
+		// KernelArgs: "console=ttyS0 noapic reboot=k panic=1 pci=off nomodule i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd",
 		MachineCfg: models.MachineConfiguration{
 			VcpuCount:  firecracker.Int64(2),
 			MemSizeMib: firecracker.Int64(1024),
@@ -76,6 +78,7 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 		MmdsVersion:       firecracker.MMDSv2,
 		ForwardSignals:    []os.Signal{},
 		NetworkInterfaces: []firecracker.NetworkInterface{networkInterface},
+		// InitrdPath:        opts.InitrdPath,
 	}
 
 	machine, err := createFirecrackerVM(ctx, cfg, "/bin/firecracker", opts.SocketPath)

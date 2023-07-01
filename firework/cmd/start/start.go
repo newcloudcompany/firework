@@ -164,8 +164,9 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 			FifoPath:        fifoPath,
 			Id:              id,
 			Cid:             cid,
-			VsockPath:       filepath.Join(vmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
-			IpConfig:        ipConfig,
+			// InitrdPath:      filepath.Join(wd, "assets", "initrd.cpio"),
+			VsockPath: filepath.Join(vmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
+			IpConfig:  ipConfig,
 		})
 		if err != nil {
 			return nil, err

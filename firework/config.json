@@ -2,12 +2,6 @@
     "nodes": [
         {
             "name": "gateway"
-        },
-        {
-            "name": "worker-1"
-        },
-        {
-            "name": "worker-2"
         }
     ]
 }
