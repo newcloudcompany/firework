@@ -18,32 +18,32 @@ func prepareEnvironment() error {
 		return err
 	}
 
-	if err := os.RemoveAll(vmDataDir); err != nil {
+	if err := os.RemoveAll(sources.VmDataDir); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(kernelDir, 0755); err != nil {
+	if err := os.MkdirAll(sources.KernelDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(rootFsDir, 0755); err != nil {
+	if err := os.MkdirAll(sources.RootFsDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(miscDir, 0755); err != nil {
+	if err := os.MkdirAll(sources.MiscDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(vmDataDir, 0755); err != nil {
+	if err := os.MkdirAll(sources.VmDataDir, 0755); err != nil {
 		return err
 	}
 
-	err := ensureKernel(sources.KernelUrl, filepath.Join(kernelDir, "vmlinux"))
+	err := ensureKernel(sources.KernelUrl, filepath.Join(sources.KernelDir, "vmlinux"))
 	if err != nil {
 		return err
 	}
 
-	err = ensureSquashFs(sources.SquashFsUrl, rootFsDir)
+	err = ensureSquashFs(sources.SquashFsUrl, sources.RootFsDir)
 	if err != nil {
 		return err
 	}

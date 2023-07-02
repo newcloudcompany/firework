@@ -17,13 +17,6 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-var cacheDir = filepath.Join(sources.DataDir, "cache")
-var kernelDir = filepath.Join(cacheDir, "kernel")
-var rootFsDir = filepath.Join(cacheDir, "rootfs")
-var vmDataDir = filepath.Join(sources.DataDir, "vm")
-var miscDir = filepath.Join(sources.DataDir, "misc")
-var dbPath = filepath.Join(miscDir, "ips.db")
-
 type Node struct {
 	Name string `json:"name"`
 }
@@ -50,11 +43,11 @@ func cleanup() {
 		log.Fatalf("Failed to cleanup network: %v", err)
 	}
 
-	if err := os.Remove(filepath.Join(miscDir, "ips.db")); err != nil {
+	if err := os.Remove(filepath.Join(sources.MiscDir, "ips.db")); err != nil {
 		log.Println("Failed to remove ips.db:", err)
 	}
 
-	if err := os.RemoveAll(filepath.Join(vmDataDir)); err != nil {
+	if err := os.RemoveAll(sources.VmDataDir); err != nil {
 		log.Println("Failed to remove vm data dir:", err)
 	}
 }
@@ -69,14 +62,14 @@ func runStart() error {
 	defer cleanup()
 
 	// TODO: Remove this
-	os.Remove(dbPath)
+	os.Remove(sources.DbPath)
 
 	if err := prepareEnvironment(); err != nil {
 		return err
 	}
 	slog.Debug("Prepared environment for execution.")
 
-	ipamDb, err := ipam.NewIPAM(dbPath, "10.0.0.240/28")
+	ipamDb, err := ipam.NewIPAM(sources.DbPath, "10.0.0.240/28")
 	if err != nil {
 		return err
 	}
@@ -118,8 +111,8 @@ func runStart() error {
 }
 
 func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
-	kernelPath := filepath.Join(kernelDir, "vmlinux")
-	rootFsPath := filepath.Join(rootFsDir, "rootfs.squashfs")
+	kernelPath := filepath.Join(sources.KernelDir, "vmlinux")
+	rootFsPath := filepath.Join(sources.RootFsDir, "rootfs.squashfs")
 
 	mg := vm.NewMachineGroup()
 
@@ -141,14 +134,8 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 		}
 		slog.Info("Allocated free IP address", "node", node.Name, "addr", addr)
 
-		// rootFsCopyPath, err := createRootFsCopy(rootFsPath, vmDataDir, id)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// slog.Debug("Created a copy of base rootfs", "node", node.Name)
-
-		socketPath := filepath.Join(vmDataDir, fmt.Sprintf("%s.sock", id))
-		fifoPath := filepath.Join(miscDir, fmt.Sprintf("%s.fifo", id))
+		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", id))
+		fifoPath := filepath.Join(sources.MiscDir, fmt.Sprintf("%s.fifo", id))
 		ipConfig, err := vm.NewMachineIpConfig(bridge.GetIPAddr(), addr, tap.Name)
 		if err != nil {
 			return nil, err
@@ -162,14 +149,14 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 			Id:              id,
 			Cid:             cid,
 			// InitrdPath:      filepath.Join(wd, "assets", "initrd.cpio"),
-			VsockPath: filepath.Join(vmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
+			VsockPath: filepath.Join(sources.VmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
 			IpConfig:  ipConfig,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		mg.AddMachine(machine, cid)
+		mg.AddMachine(machine, node.Name, cid)
 		slog.Debug("Created and added the machine config to the machine group")
 	}
 

@@ -6,28 +6,40 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 
 	firecracker "github.com/firecracker-microvm/firecracker-go-sdk"
+	"github.com/jlkiri/firework/sources"
 	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
 )
 
 type Machine struct {
 	inner *firecracker.Machine
+	name  string
 	cid   uint32
 }
 
 type MachineGroup struct {
 	machines []Machine
 	eg       *errgroup.Group
+	pidTable PidTable
 }
+
+type Entry struct {
+	MachineName string `json:"machine_name"`
+	Pid         int    `json:"pid"`
+}
+
+type PidTable map[string]Entry
 
 func NewMachineGroup() *MachineGroup {
 	return &MachineGroup{
 		machines: make([]Machine, 0),
 		eg:       new(errgroup.Group),
+		pidTable: make(PidTable),
 	}
 }
 
@@ -43,9 +55,19 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			
+
 			if err := machine.inner.SetMetadata(ctx, metadata); err != nil {
 				return err
+			}
+
+			pid, err := machine.inner.PID()
+			if err != nil {
+				return err
+			}
+
+			mg.pidTable[machine.inner.Cfg.VMID] = Entry{
+				MachineName: machine.name,
+				Pid:         pid,
 			}
 
 			if err := machine.inner.Wait(ctx); err != nil {
@@ -54,6 +76,15 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 
 			return nil
 		})
+	}
+
+	bytes, err := json.Marshal(mg.pidTable)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(sources.MiscDir, "pid_table.json"), bytes, 0644); err != nil {
+		return err
 	}
 
 	return nil
@@ -73,8 +104,8 @@ func (mg *MachineGroup) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (mg *MachineGroup) AddMachine(machine *firecracker.Machine, cid uint32) error {
-	mg.machines = append(mg.machines, Machine{machine, cid})
+func (mg *MachineGroup) AddMachine(machine *firecracker.Machine, name string, cid uint32) error {
+	mg.machines = append(mg.machines, Machine{machine, name, cid})
 	return nil
 }
 

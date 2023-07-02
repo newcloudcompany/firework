@@ -2,18 +2,16 @@ package vm
 
 import (
 	"context"
-	"os"
 	"syscall"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 )
 
 func createFirecrackerVM(ctx context.Context, cfg firecracker.Config, binPath, socketPath string) (*firecracker.Machine, error) {
+	// Command interface automatically connects stdout/stderr/stdin to /dev/null if not specified.
 	cmd := firecracker.VMCommandBuilder{}.
 		WithSocketPath(socketPath).
 		WithBin(binPath).
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr).
 		Build(ctx)
 
 	// Detach from controlling terminal so that the signals originating from the terminal
