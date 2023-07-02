@@ -63,20 +63,18 @@ func runStop() error {
 	}
 
 	for _, entry := range pidTable {
-		proc, err := os.FindProcess(entry.Pid)
-		if err != nil {
-			return err
-		}
 
 		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", entry.VmId))
-		cmd := firecracker.VMCommandBuilder{}.
-			Build(context.TODO())
+		// cmd := firecracker.VMCommandBuilder{}.
+		// 	Build(context.TODO())
 
-		cmd.Process = proc
+		if _, err := os.Stat(socketPath); os.IsNotExist(err) {
+			continue
+		}
 
 		m, err := firecracker.NewMachine(context.TODO(), firecracker.Config{
 			SocketPath: socketPath,
-		}, firecracker.WithProcessRunner(cmd))
+		})
 		if err != nil {
 			return err
 		}

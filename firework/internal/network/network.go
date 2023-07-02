@@ -3,7 +3,6 @@ package network
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
@@ -37,13 +36,6 @@ const (
 )
 
 func cleanupIptables(subnetCidr string) error {
-	path, ok := os.LookupEnv("PATH")
-	if !ok {
-		return fmt.Errorf("PATH not set")
-	}
-
-	fmt.Println("PATH", path)
-
 	ipt, err := iptables.New()
 	if err != nil {
 		return err
