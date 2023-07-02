@@ -12,13 +12,11 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /root
 # Download Firecracker
 RUN curl -fL -o /root/firecracker-v1.3.3-x86_64.tgz \
     https://github.com/firecracker-microvm/firecracker/releases/download/v1.3.3/firecracker-v1.3.3-x86_64.tgz
 
 # Unarchive
-
 RUN tar -xvf /root/firecracker-v1.3.3-x86_64.tgz -C /root
 
 # Move binary to /usr/bin

@@ -30,29 +30,7 @@ func NewStartCommand() *cobra.Command {
 	return startCmd
 }
 
-func cleanup() {
-	// if err := network.Cleanup(); err != nil {
-	// 	log.Fatalf("Failed to cleanup network: %v", err)
-	// }
-
-	// if err := os.Remove(filepath.Join(sources.MiscDir, "ips.db")); err != nil {
-	// 	log.Println("Failed to remove ips.db:", err)
-	// }
-
-	// if err := os.RemoveAll(sources.VmDataDir); err != nil {
-	// 	log.Println("Failed to remove vm data dir:", err)
-	// }
-}
-
 func runStart() error {
-	defer func() {
-		if err := recover(); err != nil {
-			cleanup()
-		}
-	}()
-
-	defer cleanup()
-
 	// TODO: Remove this
 	os.Remove(sources.DbPath)
 
@@ -106,11 +84,8 @@ func runStart() error {
 }
 
 func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
-	wd, _ := os.Getwd()
-
 	kernelPath := filepath.Join(sources.KernelDir, "vmlinux")
-	// rootFsPath := filepath.Join(sources.RootFsDir, "rootfs.squashfs")
-	rootFsPath := filepath.Join(wd, "assets", "rootfs.squashfs")
+	rootFsPath := getRootFsPath()
 
 	mg := vm.NewMachineGroup()
 

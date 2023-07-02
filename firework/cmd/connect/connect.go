@@ -28,18 +28,7 @@ func NewConnectCommand() *cobra.Command {
 	return connectCmd
 }
 
-func cleanup() {
-}
-
 func runConnect(vmName string) error {
-	defer func() {
-		if err := recover(); err != nil {
-			cleanup()
-		}
-	}()
-
-	defer cleanup()
-
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to make terminal raw: %w", err)

@@ -68,10 +68,6 @@ func runStop() error {
 			return err
 		}
 
-		// if err := proc.Signal(syscall.SIGTERM); err != nil {
-		// 	return err
-		// }
-
 		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", entry.VmId))
 		cmd := firecracker.VMCommandBuilder{}.
 			Build(context.TODO())

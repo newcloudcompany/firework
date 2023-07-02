@@ -80,6 +80,14 @@ func ensureSquashFs(rootFsUrl, rootFsDir string) error {
 	return nil
 }
 
+func getRootFsPath() string {
+	envRootFsPath := os.Getenv("ROOTFS_PATH")
+	if envRootFsPath != "" {
+		return envRootFsPath
+	}
+	return filepath.Join(sources.RootFsDir, "rootfs.squashfs")
+}
+
 func download(url string, dest string) error {
 	out, err := os.Create(dest)
 	if err != nil {
