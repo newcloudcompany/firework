@@ -16,14 +16,6 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type Node struct {
-	Name string `json:"name"`
-}
-
-type Config struct {
-	Nodes []Node `json:"nodes"`
-}
-
 func NewStartCommand() *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -150,6 +142,8 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 			FifoPath:        fifoPath,
 			Id:              id,
 			Cid:             cid,
+			Vcpu:            node.Vcpu,
+			Memory:          node.Memory,
 			// InitrdPath:      filepath.Join(wd, "assets", "initrd.cpio"),
 			VsockPath: filepath.Join(sources.VmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
 			IpConfig:  ipConfig,

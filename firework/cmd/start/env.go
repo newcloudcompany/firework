@@ -1,7 +1,6 @@
 package start
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -79,23 +78,6 @@ func ensureSquashFs(rootFsUrl, rootFsDir string) error {
 	}
 
 	return nil
-}
-
-func readConfigFromJson(path string) (Config, error) {
-	wd, _ := os.Getwd()
-	absPath := filepath.Join(wd, path)
-	file, err := os.ReadFile(absPath)
-	if err != nil {
-		return Config{}, err
-	}
-
-	var config Config
-	err = json.Unmarshal(file, &config)
-	if err != nil {
-		return Config{}, err
-	}
-
-	return config, nil
 }
 
 func download(url string, dest string) error {

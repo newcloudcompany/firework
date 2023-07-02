@@ -18,6 +18,8 @@ type MachineOptions struct {
 	InitrdPath      string
 	Id              string
 	Cid             uint32
+	Memory          int64
+	Vcpu            int64
 	IpConfig        *machineIpConfig
 }
 
@@ -53,8 +55,8 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd init=/sbin/overlay-init",
 		// KernelArgs: "console=ttyS0 noapic reboot=k panic=1 pci=off nomodule i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd",
 		MachineCfg: models.MachineConfiguration{
-			VcpuCount:  firecracker.Int64(2),
-			MemSizeMib: firecracker.Int64(1024),
+			VcpuCount:  firecracker.Int64(opts.Vcpu),
+			MemSizeMib: firecracker.Int64(opts.Memory),
 			Smt:        firecracker.Bool(false),
 		},
 		Drives: []models.Drive{

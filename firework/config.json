@@ -1,7 +1,9 @@
 {
     "nodes": [
         {
-            "name": "gateway"
+            "name": "gateway",
+            "vcpu": 2,
+            "memory": 2048
         }
     ]
 }
