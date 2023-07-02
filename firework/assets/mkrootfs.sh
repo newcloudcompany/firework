@@ -47,9 +47,14 @@ function debootstrap_rootfs {
     cp .vimrc "$rootfs_base/root/.vimrc"
     cp ../firework "$rootfs_base/usr/bin/firework"
     cp ../config_vm.json "$rootfs_base/config.json"
+    
 
     echo "Installing additional tools in the rootfs..."
     install_additional_tools
+
+    echo "Performing additional configuration..."
+    chroot "$rootfs_base" /bin/bash -c "echo \"net.ipv4.conf.all.forwarding = 1\" >> /etc/sysctl.conf"
+    chroot "$rootfs_base" /bin/bash -c "update-alternatives --set iptables /usr/sbin/iptables-legacy"
 }
 
 function mkroot_squashfs {
