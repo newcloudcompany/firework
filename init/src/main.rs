@@ -2,7 +2,7 @@
 extern crate log;
 
 use std::net::Ipv4Addr;
-use std::{env, fs};
+use std::{env, fs, error};
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
@@ -16,6 +16,7 @@ use anyhow::Error;
 use ptyca::{openpty, PtyCommandExt};
 
 use nix::errno::Errno;
+use rustix::process::getpid;
 use serde::{Deserialize};
 use nix::mount::{mount as nix_mount, MsFlags};
 
@@ -27,10 +28,6 @@ use nix::unistd::{chdir as nix_chdir, chroot as nix_chroot, mkdir as nix_mkdir, 
 use nix::NixPath;
 
 use vsock::{VsockListener, VsockStream};
-
-
-const SIOCETHTOOL: u32 = 0x8946;
-const IFA_F_NODAD: u8 = 0x02;
 
 pub fn log_init() {
     // default to "info" level, just for this bin
@@ -258,43 +255,7 @@ fn main() -> Result<(), InitError> {
 
     // rlimit::setrlimit(rlimit::Resource::NOFILE, 10240, 10240).ok();
 
-    let user = "root".to_owned();
-
-    let mut user_split = user.split(':');
-
-    let user = user_split
-        .next()
-        .expect("no user defined, this should not happen, please contact support!");
-
-    info!("searching for user '{}", user);
-
     mkdir("/etc", chmod_0755).ok();
-
-
-    // let config_file = fs::read_to_string("/etc/config").expect("Unable to read config");
-    // let config: Config = serde_json::from_str(&config_file).expect("Unable to parse config");
-
-    // {
-    //     let mut command = Command::new("ssh-keygen");
-    //     let output = command.args(["-A"]).output()?;
-
-    //     println!("{}", String::from_utf8_lossy(&output.stderr));
-    //     println!("{}", String::from_utf8_lossy(&output.stdout));
-    // }
-
-    // {
-    //     let mut command = Command::new("ip");
-    //     let output = command.args(["addr", "add", &config.ip.to_string(), "dev", "eth0"]).output()?;
-
-    //     println!("{}", String::from_utf8_lossy(&output.stderr));
-    //     println!("{}", String::from_utf8_lossy(&output.stdout));
-    // }
-
-    // Open a serial console
-    // let mut serial = OpenOptions::new()
-    //     .read(true)
-    //     .write(true)
-    //     .open("/dev/ttyS0")?;
 
     // Use HTTP client (reqwest) to call Firecracker MMDS endpoint to retrieve metadata that contains the CID for the vsock listener.
     // First it must call the token endpoint (/latest/api/token) with PUT method and X-metadata-token-ttl-seconds header to issue a session token.
@@ -317,8 +278,6 @@ fn main() -> Result<(), InitError> {
         .text().expect("failed to text");
 
     info!("token: {}", token);
-    // serial.write_all(token.as_bytes())?;
-    // serial.flush()?;
 
     let cid = client
         .get(&format!("http://{}/latest/meta-data/cid", addr))
@@ -327,18 +286,24 @@ fn main() -> Result<(), InitError> {
         .text().expect("failed to text");
 
     info!("cid: {}", cid);
-    // serial.write_all(cid.as_bytes())?;
-    // serial.flush()?;
     
     // Make cid u32.
     let cid = cid.parse::<u32>().expect("failed to convert");
-    let listener = VsockListener::bind_with_cid_port(cid, 10000)?;
-    // serial.write_all(listener.local_addr().unwrap().to_string().as_bytes())?;
-    // serial.flush()?;
+    
 
+    // Enable packet forwarding.
+    fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
+
+    // Set standard PATH env variable.
+    env::set_var("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+
+    let listener = VsockListener::bind_with_cid_port(cid, 10000).expect("failed to bind vsock");
     for stream in listener.incoming() {
-        handle_conn(stream?).expect("wow");
+        std::thread::spawn(|| {
+            handle_conn(stream.expect("bad connection")).expect("failed handling connection")
+        });
     }
+
     Ok(())
 }
 
@@ -506,6 +471,9 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
     let primary_raw_fd = primary.as_raw_fd();
 
     let mut cmd = Command::new("bash");
+    cmd.arg("-i");
+    cmd.envs(env::vars());
+
     let mut child = cmd.spawn_pty(secondary)?;
 
     let (tx, rx) = mpsc::channel();

@@ -45,7 +45,7 @@ function debootstrap_rootfs {
     cp init "$rootfs_base/sbin/init"
     cp overlay-init "$rootfs_base/sbin/overlay-init"
     cp .vimrc "$rootfs_base/root/.vimrc"
-    cp ../firework "$rootfs_base/usr/bin/firework"
+    # cp ../firework "$rootfs_base/usr/bin/firework"
     cp ../config_vm.json "$rootfs_base/config.json"
     
 

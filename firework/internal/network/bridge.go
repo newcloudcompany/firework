@@ -82,6 +82,10 @@ func NewBridgeNetwork(subnetCidr string, gateway string) (*BridgeNetwork, error)
 		return nil, fmt.Errorf("failed to set up bridge %s: %w", VM_BRIDGE_NAME, err)
 	}
 
+	if err := setupIptables(subnetCidr); err != nil {
+		return nil, fmt.Errorf("failed to set up iptables: %w", err)
+	}
+
 	return &BridgeNetwork{bridge, bridgeIpAddr.IP}, nil
 }
 
