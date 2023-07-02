@@ -5,8 +5,8 @@ use rustix::{
     fs::{cwd, openat, Mode},
     termios::{cfmakeraw, OptionalActions, Termios},
 };
-use std::{os::unix::process::CommandExt, process::Command};
 use std::io;
+use std::{os::unix::process::CommandExt, process::Command};
 
 use rustix::process::setsid;
 

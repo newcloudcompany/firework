@@ -1,8 +1,8 @@
+use ptyca::{make_terminal_raw, restore_terminal};
 use std::{
     io::{self, Read, Write},
     os::unix::net::UnixStream,
 };
-use ptyca::{make_terminal_raw, restore_terminal};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = std::env::args()

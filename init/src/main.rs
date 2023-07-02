@@ -1,10 +1,9 @@
 #[macro_use]
 extern crate log;
 
-use std::net::Ipv4Addr;
-use std::{env, fs, error};
+use std::{env, fs};
 
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{self, Read, Write};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 
@@ -16,15 +15,14 @@ use anyhow::Error;
 use ptyca::{openpty, PtyCommandExt};
 
 use nix::errno::Errno;
-use rustix::process::getpid;
-use serde::{Deserialize};
+
 use nix::mount::{mount as nix_mount, MsFlags};
 
 use nix::sys::{
     stat::Mode,
     wait::{waitpid, WaitPidFlag, WaitStatus},
 };
-use nix::unistd::{chdir as nix_chdir, chroot as nix_chroot, mkdir as nix_mkdir, symlinkat};
+use nix::unistd::{mkdir as nix_mkdir, symlinkat};
 use nix::NixPath;
 
 use vsock::{VsockListener, VsockStream};
@@ -261,7 +259,7 @@ fn main() -> Result<(), InitError> {
     // First it must call the token endpoint (/latest/api/token) with PUT method and X-metadata-token-ttl-seconds header to issue a session token.
     // Then the token is used in the X-metadata-token header to make a call to latest/meta-data endpoint.
     // MMDS IPv4 address: 169.254.169.254
-    
+
     let addr = "169.254.169.254";
 
     // Add route to MMDS.
@@ -274,28 +272,34 @@ fn main() -> Result<(), InitError> {
     let token = client
         .put(&format!("http://{}/latest/api/token", addr))
         .header("X-metadata-token-ttl-seconds", "21600")
-        .send().expect("failed to send")
-        .text().expect("failed to text");
+        .send()
+        .expect("failed to send")
+        .text()
+        .expect("failed to text");
 
     info!("token: {}", token);
 
     let cid = client
         .get(&format!("http://{}/latest/meta-data/cid", addr))
         .header("X-metadata-token", token)
-        .send().expect("failed to send")
-        .text().expect("failed to text");
+        .send()
+        .expect("failed to send")
+        .text()
+        .expect("failed to text");
 
     info!("cid: {}", cid);
-    
+
     // Make cid u32.
     let cid = cid.parse::<u32>().expect("failed to convert");
-    
 
     // Enable packet forwarding.
     fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
 
     // Set standard PATH env variable.
-    env::set_var("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+    env::set_var(
+        "PATH",
+        "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    );
 
     let listener = VsockListener::bind_with_cid_port(cid, 10000).expect("failed to bind vsock");
     for stream in listener.incoming() {
@@ -423,22 +427,12 @@ fn mount<P1: ?Sized + NixPath, P2: ?Sized + NixPath, P3: ?Sized + NixPath, P4: ?
     nix_mount(source, target, fstype, flags, data).map_err(|error| InitError::Mount {
         source: source
             .map(|p| {
-                p.with_nix_path(|cs| {
-                    cs.to_owned()
-                        .into_string()
-                        .ok()
-                        .unwrap_or_else(|| String::new())
-                })
-                .unwrap_or_else(|_| String::new())
+                p.with_nix_path(|cs| cs.to_owned().into_string().ok().unwrap_or_default())
+                    .unwrap_or_else(|_| String::new())
             })
-            .unwrap_or_else(|| String::new()),
+            .unwrap_or_else(String::new),
         target: target
-            .with_nix_path(|cs| {
-                cs.to_owned()
-                    .into_string()
-                    .ok()
-                    .unwrap_or_else(|| String::new())
-            })
+            .with_nix_path(|cs| cs.to_owned().into_string().ok().unwrap_or_default())
             .unwrap_or_else(|_| String::new()),
         error,
     })
@@ -447,12 +441,7 @@ fn mount<P1: ?Sized + NixPath, P2: ?Sized + NixPath, P3: ?Sized + NixPath, P4: ?
 fn mkdir<P: ?Sized + NixPath>(path: &P, mode: Mode) -> Result<(), InitError> {
     nix_mkdir(path, mode).map_err(|error| InitError::Mkdir {
         path: path
-            .with_nix_path(|cs| {
-                cs.to_owned()
-                    .into_string()
-                    .ok()
-                    .unwrap_or_else(|| String::new())
-            })
+            .with_nix_path(|cs| cs.to_owned().into_string().ok().unwrap_or_default())
             .unwrap_or_else(|_| String::new()),
         error,
     })
