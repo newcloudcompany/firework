@@ -35,3 +35,8 @@ TODO: Use SDK-provided vsock client
 	// 	})
 	// }
 ```
+
+
+```
+update-alternatives --set iptables /usr/sbin/iptables-legacy
+```

@@ -1,4 +1,4 @@
-package start
+package config
 
 import (
 	"encoding/json"
@@ -13,10 +13,12 @@ type Node struct {
 }
 
 type Config struct {
-	Nodes []Node `json:"nodes"`
+	Nodes      []Node `json:"nodes"`
+	SubnetCidr string `json:"subnet_cidr"`
+	Gateway    string `json:"gateway"`
 }
 
-func readConfigFromJson(path string) (Config, error) {
+func Read(path string) (Config, error) {
 	wd, _ := os.Getwd()
 	absPath := filepath.Join(wd, path)
 	file, err := os.ReadFile(absPath)

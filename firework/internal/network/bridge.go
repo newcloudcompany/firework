@@ -43,7 +43,7 @@ type BridgeNetwork struct {
 	ipAddr net.IP
 }
 
-func NewBridgeNetwork() (*BridgeNetwork, error) {
+func NewBridgeNetwork(subnetCidr string, gateway string) (*BridgeNetwork, error) {
 	if link, err := netlink.LinkByName(VM_BRIDGE_NAME); err == nil {
 		br, ok := link.(*netlink.Bridge)
 		if !ok {
@@ -56,7 +56,7 @@ func NewBridgeNetwork() (*BridgeNetwork, error) {
 			return nil, fmt.Errorf("failed to get IP address of bridge %s: %w", VM_BRIDGE_NAME, err)
 		}
 
-		if err := setupIptables(); err != nil {
+		if err := setupIptables(subnetCidr); err != nil {
 			return nil, fmt.Errorf("failed to set up iptables: %w", err)
 		}
 
@@ -69,9 +69,9 @@ func NewBridgeNetwork() (*BridgeNetwork, error) {
 		return nil, fmt.Errorf("failed to create bridge %s: %w", VM_BRIDGE_NAME, err)
 	}
 
-	bridgeIpAddr, err := netlink.ParseAddr(VM_BRIDGE_IPv4_ADDR)
+	bridgeIpAddr, err := netlink.ParseAddr(gateway)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse bridge IP address %s: %w", VM_BRIDGE_IPv4_ADDR, err)
+		return nil, fmt.Errorf("failed to parse bridge IP address %s: %w", gateway, err)
 	}
 
 	if err := netlink.AddrAdd(bridge, bridgeIpAddr); err != nil {

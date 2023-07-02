@@ -7,7 +7,7 @@ cd $script_dir
 
 rootfs_base="debian-bullseye-rootfs"
 squashfs_img="rootfs.squashfs"
-packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git build-essential"
+packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git"
 
 # mkdir -p "$rootfs_base"
 
@@ -44,6 +44,9 @@ function debootstrap_rootfs {
     mkdir -p "$rootfs_base/overlay" "$rootfs_base/mnt" "$rootfs_base/rom"
     cp init "$rootfs_base/sbin/init"
     cp overlay-init "$rootfs_base/sbin/overlay-init"
+    cp .vimrc "$rootfs_base/root/.vimrc"
+    cp ../firework "$rootfs_base/usr/bin/firework"
+    cp ../config_vm.json "$rootfs_base/config.json"
 
     echo "Installing additional tools in the rootfs..."
     install_additional_tools

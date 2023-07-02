@@ -1,4 +1,6 @@
 {
+    "subnet_cidr": "10.0.0.240/28",
+    "gateway": "10.0.0.241/28",
     "nodes": [
         {
             "name": "gateway",

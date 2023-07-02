@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
@@ -10,10 +11,8 @@ import (
 )
 
 const (
-	VM_BRIDGE_NAME      = "firework0"
-	VM_SUBNET           = "10.0.0.240/28"
-	VM_BRIDGE_IPv4_ADDR = "10.0.0.241/28"
-	VM_TAP_PREFIX       = "tap-firework"
+	VM_BRIDGE_NAME = "firework0"
+	VM_TAP_PREFIX  = "tap-firework"
 )
 
 type Chain string
@@ -37,10 +36,20 @@ const (
 	TargetMasquerade Target = "MASQUERADE"
 )
 
-func cleanupIptables() error {
-	ipt, _ := iptables.New()
+func cleanupIptables(subnetCidr string) error {
+	path, ok := os.LookupEnv("PATH")
+	if !ok {
+		return fmt.Errorf("PATH not set")
+	}
 
-	if err := ipt.DeleteIfExists(string(TableNat), string(ChainPostrouting), "!", "-o", VM_BRIDGE_NAME, "-s", VM_SUBNET, "-j", string(TargetMasquerade)); err != nil {
+	fmt.Println("PATH", path)
+
+	ipt, err := iptables.New()
+	if err != nil {
+		return err
+	}
+
+	if err := ipt.DeleteIfExists(string(TableNat), string(ChainPostrouting), "!", "-o", VM_BRIDGE_NAME, "-s", subnetCidr, "-j", string(TargetMasquerade)); err != nil {
 		return err
 	}
 	if err := ipt.DeleteIfExists(string(TableFilter), string(ChainForward), "-i", VM_BRIDGE_NAME, "!", "-o", VM_BRIDGE_NAME, "-j", string(TargetAccept)); err != nil {
@@ -57,11 +66,14 @@ func cleanupIptables() error {
 	return nil
 }
 
-func setupIptables() error {
-	ipt, _ := iptables.New()
+func setupIptables(subnetCidr string) error {
+	ipt, err := iptables.New()
+	if err != nil {
+		return err
+	}
 
 	// Add default iptables
-	if err := ipt.AppendUnique(string(TableNat), string(ChainPostrouting), "!", "-o", VM_BRIDGE_NAME, "-s", VM_SUBNET, "-j", string(TargetMasquerade)); err != nil {
+	if err := ipt.AppendUnique(string(TableNat), string(ChainPostrouting), "!", "-o", VM_BRIDGE_NAME, "-s", subnetCidr, "-j", string(TargetMasquerade)); err != nil {
 		return err
 	}
 	if err := ipt.AppendUnique(string(TableFilter), string(ChainForward), "-i", VM_BRIDGE_NAME, "!", "-o", VM_BRIDGE_NAME, "-j", string(TargetAccept)); err != nil {
@@ -77,8 +89,8 @@ func setupIptables() error {
 	return nil
 }
 
-func Cleanup() error {
-	if err := cleanupIptables(); err != nil {
+func Cleanup(subnetCidr string) error {
+	if err := cleanupIptables(subnetCidr); err != nil {
 		return fmt.Errorf("failed to cleanup iptables: %w", err)
 	}
 

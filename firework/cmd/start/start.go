@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/jlkiri/firework/internal/config"
 	"github.com/jlkiri/firework/internal/ipam"
 	"github.com/jlkiri/firework/internal/network"
 	"github.com/jlkiri/firework/internal/vm"
@@ -60,28 +61,28 @@ func runStart() error {
 	}
 	slog.Debug("Prepared environment for execution.")
 
-	ipamDb, err := ipam.NewIPAM(sources.DbPath, "10.0.0.240/28")
-	if err != nil {
-		return err
-	}
-	slog.Debug("Created and populated IPAM database.")
-
-	bridge, err := network.NewBridgeNetwork()
-	if err != nil {
-		return err
-	}
-	slog.Debug("Created a bridge network.")
-
-	config, err := readConfigFromJson("config.json")
+	conf, err := config.Read("config.json")
 	if err != nil {
 		return err
 	}
 	slog.Debug("Read config.json.")
 
+	ipamDb, err := ipam.NewIPAM(sources.DbPath, conf.SubnetCidr)
+	if err != nil {
+		return err
+	}
+	slog.Debug("Created and populated IPAM database.")
+
+	bridge, err := network.NewBridgeNetwork(conf.SubnetCidr, conf.Gateway)
+	if err != nil {
+		return err
+	}
+	slog.Debug("Created a bridge network.")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	mg, err := createMachineGroup(ctx, config.Nodes, bridge, ipamDb)
+	mg, err := createMachineGroup(ctx, conf.Nodes, bridge, ipamDb)
 	if err != nil {
 		return fmt.Errorf("failed to create machine group: %w", err)
 	}
@@ -104,7 +105,7 @@ func runStart() error {
 	return nil
 }
 
-func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
+func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
 	wd, _ := os.Getwd()
 
 	kernelPath := filepath.Join(sources.KernelDir, "vmlinux")

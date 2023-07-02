@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
+	"github.com/jlkiri/firework/internal/config"
 	"github.com/jlkiri/firework/internal/network"
 	"github.com/jlkiri/firework/internal/vm"
 	"github.com/jlkiri/firework/sources"
@@ -29,7 +30,12 @@ func NewStopCommand() *cobra.Command {
 }
 
 func cleanup() {
-	if err := network.Cleanup(); err != nil {
+	conf, err := config.Read("config.json")
+	if err != nil {
+		log.Fatalf("Failed to read config: %v", err)
+	}
+
+	if err := network.Cleanup(conf.SubnetCidr); err != nil {
 		log.Fatalf("Failed to cleanup network: %v", err)
 	}
 
