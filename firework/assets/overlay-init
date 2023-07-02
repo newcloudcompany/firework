@@ -29,18 +29,31 @@ pivot() {
 
 # Overlay is configured under /overlay
 do_overlay() {
-    /bin/mount -t tmpfs -o noatime,mode=0755 tmpfs /overlay
+    local overlay_dir="/overlay"
+    if [ "$overlay_root" = "ram" ] ||
+           [ -z "$overlay_root" ]; then
+        /bin/mount -t tmpfs -o noatime,mode=0755 tmpfs /overlay
+    else
+        /bin/mount -t ext4 "/dev/$overlay_root" /overlay
+    fi
     mkdir -p /overlay/root /overlay/work
     pivot /overlay/root /overlay/work
 }
 
+# If we're given an overlay, ensure that it really exists. Panic if not.
+if [ -n "$overlay_root" ] &&
+       [ "$overlay_root" != ram ] &&
+       [ ! -b "/dev/$overlay_root" ]; then
+    echo -n "FATAL: "
+    echo "Overlay root given as $overlay_root but /dev/$overlay_root does not exist"
+    exit 1
+fi
+
 do_overlay
 
 # Move mount point of devtmpfs so we don't have to remount it
-# /bin/mount -t devtmpfs -o remount,ro none /dev
 /bin/mount --move /rom/dev /dev
 
 # Invoke the actual system init program and procede with the boot
 # process.
-
 exec chroot . /sbin/init $@

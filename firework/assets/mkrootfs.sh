@@ -7,9 +7,27 @@ cd $script_dir
 
 rootfs_base="debian-bullseye-rootfs"
 squashfs_img="rootfs.squashfs"
-packages="procps iproute2 ca-certificates curl dnsutils iputils-ping cpu-checker"
+packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git build-essential"
 
-mkdir -p "$rootfs_base"
+# mkdir -p "$rootfs_base"
+
+function install_additional_tools {
+    mkdir -p tmp
+
+    # Install firecracker
+    local fc_release="firecracker-v1.3.3-x86_64"
+    curl -o "tmp/$fc_release.tgz" -L "https://github.com/firecracker-microvm/firecracker/releases/download/v1.3.3/$fc_release.tgz"
+    tar -xvf "tmp/$fc_release.tgz" -C tmp
+    cp "tmp/release-v1.3.3-x86_64/$fc_release" "$rootfs_base/usr/bin/firecracker"
+
+    # Install golang
+    local go_release="go1.20.5.linux-amd64"
+    curl -o "tmp/$go_release.tar.gz" -L "https://go.dev/dl/$go_release.tar.gz"
+    tar -C "$rootfs_base/usr/local" -xzf "tmp/$go_release.tar.gz"
+
+    echo "export PATH=$PATH:/usr/local/go/bin" >> "$rootfs_base/etc/profile"
+    rm -rf tmp
+}
 
 function debootstrap_rootfs {
     if [[ ! -e "$rootfs_base" ]]; then
@@ -22,10 +40,13 @@ function debootstrap_rootfs {
             http://deb.debian.org/debian/    
     fi
     
-    echo "Copying init to the rootfs..."
+    echo "Installing init in the rootfs..."
     mkdir -p "$rootfs_base/overlay" "$rootfs_base/mnt" "$rootfs_base/rom"
     cp init "$rootfs_base/sbin/init"
     cp overlay-init "$rootfs_base/sbin/overlay-init"
+
+    echo "Installing additional tools in the rootfs..."
+    install_additional_tools
 }
 
 function mkroot_squashfs {

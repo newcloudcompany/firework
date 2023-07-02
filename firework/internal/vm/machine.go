@@ -10,17 +10,18 @@ import (
 )
 
 type MachineOptions struct {
-	KernelImagePath string
-	RootFsPath      string
-	SocketPath      string
-	FifoPath        string
-	VsockPath       string
-	InitrdPath      string
-	Id              string
-	Cid             uint32
-	Memory          int64
-	Vcpu            int64
-	IpConfig        *machineIpConfig
+	KernelImagePath  string
+	RootFsPath       string
+	SocketPath       string
+	FifoPath         string
+	VsockPath        string
+	InitrdPath       string
+	OverlayDrivePath string
+	Id               string
+	Cid              uint32
+	Memory           int64
+	Vcpu             int64
+	IpConfig         *machineIpConfig
 }
 
 type machineIpConfig struct {
@@ -52,7 +53,7 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 	cfg := firecracker.Config{
 		SocketPath:      opts.SocketPath,
 		KernelImagePath: opts.KernelImagePath,
-		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd init=/sbin/overlay-init",
+		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off overlay_root=vdb i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd init=/sbin/overlay-init",
 		// KernelArgs: "console=ttyS0 noapic reboot=k panic=1 pci=off nomodule i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd",
 		MachineCfg: models.MachineConfiguration{
 			VcpuCount:  firecracker.Int64(opts.Vcpu),
@@ -65,6 +66,12 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 				IsRootDevice: firecracker.Bool(true),
 				IsReadOnly:   firecracker.Bool(false),
 				PathOnHost:   firecracker.String(opts.RootFsPath),
+			},
+			{
+				DriveID:      firecracker.String("overlayfs"),
+				IsRootDevice: firecracker.Bool(false),
+				IsReadOnly:   firecracker.Bool(false),
+				PathOnHost:   firecracker.String(opts.OverlayDrivePath),
 			},
 		},
 		FifoLogWriter: os.Stdout,

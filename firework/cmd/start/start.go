@@ -105,8 +105,11 @@ func runStart() error {
 }
 
 func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
+	wd, _ := os.Getwd()
+
 	kernelPath := filepath.Join(sources.KernelDir, "vmlinux")
-	rootFsPath := filepath.Join(sources.RootFsDir, "rootfs.squashfs")
+	// rootFsPath := filepath.Join(sources.RootFsDir, "rootfs.squashfs")
+	rootFsPath := filepath.Join(wd, "assets", "rootfs.squashfs")
 
 	mg := vm.NewMachineGroup()
 
@@ -135,15 +138,21 @@ func createMachineGroup(ctx context.Context, nodes []Node, bridge *network.Bridg
 			return nil, err
 		}
 
+		overlayDrivePath, err := createOverlayDrive(id)
+		if err != nil {
+			return nil, err
+		}
+
 		machine, err := vm.CreateMachine(ctx, vm.MachineOptions{
-			RootFsPath:      rootFsPath,
-			KernelImagePath: kernelPath,
-			SocketPath:      socketPath,
-			FifoPath:        fifoPath,
-			Id:              id,
-			Cid:             cid,
-			Vcpu:            node.Vcpu,
-			Memory:          node.Memory,
+			RootFsPath:       rootFsPath,
+			KernelImagePath:  kernelPath,
+			SocketPath:       socketPath,
+			FifoPath:         fifoPath,
+			Id:               id,
+			Cid:              cid,
+			Vcpu:             node.Vcpu,
+			Memory:           node.Memory,
+			OverlayDrivePath: overlayDrivePath,
 			// InitrdPath:      filepath.Join(wd, "assets", "initrd.cpio"),
 			VsockPath: filepath.Join(sources.VmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
 			IpConfig:  ipConfig,
