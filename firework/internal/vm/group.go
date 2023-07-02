@@ -29,10 +29,11 @@ type MachineGroup struct {
 }
 
 type Entry struct {
-	MachineName string `json:"machine_name"`
-	Pid         int    `json:"pid"`
+	VmId string `json:"vm_id"`
+	Pid  int    `json:"pid"`
 }
 
+// Machine name -> Entry
 type PidTable map[string]Entry
 
 func NewMachineGroup() *MachineGroup {
@@ -65,9 +66,16 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 				return err
 			}
 
-			mg.pidTable[machine.inner.Cfg.VMID] = Entry{
-				MachineName: machine.name,
-				Pid:         pid,
+			vmId := machine.inner.Cfg.VMID
+			slog.Debug("Machine started with", "name", machine.name, "vmId", vmId, "pid", pid)
+
+			mg.pidTable[machine.name] = Entry{
+				VmId: vmId,
+				Pid:  pid,
+			}
+
+			if err := mg.updatePidTable(); err != nil {
+				return err
 			}
 
 			if err := machine.inner.Wait(ctx); err != nil {
@@ -78,12 +86,18 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 		})
 	}
 
+	return nil
+}
+
+func (mg *MachineGroup) updatePidTable() error {
+	// Update the pid table file and create if it does not exist
 	bytes, err := json.Marshal(mg.pidTable)
 	if err != nil {
 		return err
 	}
 
-	if err := os.WriteFile(filepath.Join(sources.MiscDir, "pid_table.json"), bytes, 0644); err != nil {
+	pidTablePath := filepath.Join(sources.MiscDir, "pid_table.json")
+	if err := os.WriteFile(pidTablePath, bytes, 0644); err != nil {
 		return err
 	}
 
@@ -96,6 +110,7 @@ func (mg *MachineGroup) Wait(ctx context.Context) error {
 
 func (mg *MachineGroup) Shutdown(ctx context.Context) error {
 	for _, m := range mg.machines {
+		// info := m.inner.DescribeInstanceInfo()
 		if err := m.inner.Shutdown(ctx); err != nil {
 			return err
 		}
@@ -133,13 +148,20 @@ func InstallSignalHandlers(ctx context.Context, mg *MachineGroup) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
-	for sig := range c {
-		slog.Info("Caught signal: %s, requesting clean shutdown", sig.String())
-		if sig == syscall.SIGTERM || sig == os.Interrupt {
-			if err := mg.Shutdown(ctx); err != nil {
-				slog.Error("an error occurred while shutting down Firecracker VMM", err)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case sig := <-c:
+				slog.Info("Caught signal: %s, requesting clean shutdown", sig.String())
+				if sig == syscall.SIGTERM || sig == os.Interrupt {
+					if err := mg.Shutdown(ctx); err != nil {
+						slog.Error("an error occurred while shutting down Firecracker VMM", err)
+					}
+					return
+				}
 			}
-			break
 		}
-	}
+	}()
 }

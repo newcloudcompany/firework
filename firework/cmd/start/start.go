@@ -3,7 +3,6 @@ package start
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -39,17 +38,17 @@ func NewStartCommand() *cobra.Command {
 }
 
 func cleanup() {
-	if err := network.Cleanup(); err != nil {
-		log.Fatalf("Failed to cleanup network: %v", err)
-	}
+	// if err := network.Cleanup(); err != nil {
+	// 	log.Fatalf("Failed to cleanup network: %v", err)
+	// }
 
-	if err := os.Remove(filepath.Join(sources.MiscDir, "ips.db")); err != nil {
-		log.Println("Failed to remove ips.db:", err)
-	}
+	// if err := os.Remove(filepath.Join(sources.MiscDir, "ips.db")); err != nil {
+	// 	log.Println("Failed to remove ips.db:", err)
+	// }
 
-	if err := os.RemoveAll(sources.VmDataDir); err != nil {
-		log.Println("Failed to remove vm data dir:", err)
-	}
+	// if err := os.RemoveAll(sources.VmDataDir); err != nil {
+	// 	log.Println("Failed to remove vm data dir:", err)
+	// }
 }
 
 func runStart() error {
@@ -87,7 +86,9 @@ func runStart() error {
 	}
 	slog.Debug("Read config.json.")
 
-	ctx := context.TODO()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	mg, err := createMachineGroup(ctx, config.Nodes, bridge, ipamDb)
 	if err != nil {
 		return fmt.Errorf("failed to create machine group: %w", err)
@@ -98,10 +99,11 @@ func runStart() error {
 		return fmt.Errorf("failed to start machine group: %w", err)
 	}
 
+	slog.Debug("Installing signal handlers.")
 	vm.InstallSignalHandlers(ctx, mg)
-	slog.Debug("Installed signal handlers.")
 
 	if err := mg.Wait(ctx); err != nil {
+		cancel() // Stop signal handlers
 		return fmt.Errorf("an error occurred while waiting for the machine group to exit: %w", err)
 	}
 

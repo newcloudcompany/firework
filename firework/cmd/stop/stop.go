@@ -1,12 +1,14 @@
 package stop
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"syscall"
 
+	"github.com/firecracker-microvm/firecracker-go-sdk"
 	"github.com/jlkiri/firework/internal/network"
 	"github.com/jlkiri/firework/internal/vm"
 	"github.com/jlkiri/firework/sources"
@@ -60,11 +62,26 @@ func runStop() error {
 			return err
 		}
 
-		if err := proc.Signal(syscall.SIGTERM); err != nil {
+		// if err := proc.Signal(syscall.SIGTERM); err != nil {
+		// 	return err
+		// }
+
+		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", entry.VmId))
+		cmd := firecracker.VMCommandBuilder{}.
+			Build(context.TODO())
+
+		cmd.Process = proc
+
+		m, err := firecracker.NewMachine(context.TODO(), firecracker.Config{
+			SocketPath: socketPath,
+		}, firecracker.WithProcessRunner(cmd))
+		if err != nil {
 			return err
 		}
 
-		proc.Wait()
+		if err := m.Shutdown(context.TODO()); err != nil {
+			return err
+		}
 	}
 
 	return nil
