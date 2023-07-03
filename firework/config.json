@@ -6,6 +6,16 @@
             "name": "gateway",
             "vcpu": 2,
             "memory": 2048
+        },
+        {
+            "name": "worker-1",
+            "vcpu": 2,
+            "memory": 2048
+        },
+        {
+            "name": "worker-2",
+            "vcpu": 2,
+            "memory": 2048
         }
     ]
 }

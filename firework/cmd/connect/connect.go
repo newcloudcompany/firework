@@ -13,8 +13,6 @@ import (
 	"golang.org/x/term"
 )
 
-const VSOCK_LISTENER_PORT = 10000
-
 func NewConnectCommand() *cobra.Command {
 	connectCmd := &cobra.Command{
 		Use:   "connect",
@@ -37,7 +35,7 @@ func runConnect(vmName string) error {
 	defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }()
 
 	socket := config.VsockPath(vmName)
-	conn, err := vsock.DialContext(context.Background(), socket, VSOCK_LISTENER_PORT, vsock.WithDialTimeout(time.Second*5))
+	conn, err := vsock.DialContext(context.Background(), socket, config.VSOCK_LISTENER_PORT, vsock.WithDialTimeout(time.Second*5))
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %w", socket, err)
 	}
