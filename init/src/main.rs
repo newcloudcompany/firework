@@ -280,7 +280,7 @@ fn main() -> Result<(), InitError> {
     info!("token: {}", token);
 
     let cid = client
-        .get(&format!("http://{}/latest/meta-data/cid", addr))
+        .get(&format!("http://{}/cid", addr))
         .header("X-metadata-token", token)
         .send()
         .expect("failed to send")

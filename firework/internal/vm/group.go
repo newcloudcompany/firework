@@ -127,11 +127,7 @@ func (mg *MachineGroup) AddMachine(machine *firecracker.Machine, name string, ci
 func createMetadata(cid uint32, ipAddr string) (map[string]interface{}, error) {
 	jsonMetadata := fmt.Sprintf(`
 	{
-		"latest": {
-			"meta-data": {
-				"cid": "%s"
-			}
-		},
+		"cid": "%s",
 		"ipv4": "%s"
 	}
 	`, strconv.Itoa(int(cid)), ipAddr)

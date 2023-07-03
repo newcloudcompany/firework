@@ -18,7 +18,5 @@ func NewLogsCommand() *cobra.Command {
 }
 
 func runLogs() error {
-	// logsFifoPath := config.LogsFifoPath()
-
 	return nil
 }
