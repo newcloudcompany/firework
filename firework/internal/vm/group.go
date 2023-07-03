@@ -51,7 +51,8 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 				return err
 			}
 
-			metadata, err := createMetadata(machine.cid)
+			ipAddr := machine.inner.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.String()
+			metadata, err := createMetadata(machine.cid, ipAddr)
 			if err != nil {
 				return err
 			}
@@ -123,16 +124,17 @@ func (mg *MachineGroup) AddMachine(machine *firecracker.Machine, name string, ci
 	return nil
 }
 
-func createMetadata(cid uint32) (map[string]interface{}, error) {
+func createMetadata(cid uint32, ipAddr string) (map[string]interface{}, error) {
 	jsonMetadata := fmt.Sprintf(`
 	{
 		"latest": {
 			"meta-data": {
 				"cid": "%s"
 			}
-		}
+		},
+		"ipv4": "%s"
 	}
-	`, strconv.Itoa(int(cid)))
+	`, strconv.Itoa(int(cid)), ipAddr)
 
 	var metadata map[string]interface{}
 	err := json.Unmarshal([]byte(jsonMetadata), &metadata)

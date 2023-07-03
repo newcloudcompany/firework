@@ -77,7 +77,7 @@ func runStatus() error {
 	ctx := context.Background()
 
 	table := &Table{}
-	table.SetHeader([]string{"VMID", "NAME", "STATUS"})
+	table.SetHeader([]string{"VMID", "NAME", "IPv4", "STATUS"})
 
 	for name, entry := range pidTable {
 		socketPath := config.SocketPath(entry.VmId)
@@ -97,7 +97,17 @@ func runStatus() error {
 			return err
 		}
 
-		table.AddRow([]string{entry.VmId, name, *instance.State})
+		type Metadata struct {
+			IPv4 string `json:"ipv4"`
+		}
+
+		var metadata Metadata
+		err = m.GetMetadata(ctx, &metadata)
+		if err != nil {
+			return err
+		}
+
+		table.AddRow([]string{entry.VmId, name, metadata.IPv4, *instance.State})
 	}
 
 	table.Print()
