@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	"github.com/jlkiri/firework/internal/config"
 	"github.com/jlkiri/firework/internal/vm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +28,41 @@ func NewStatusCommand() *cobra.Command {
 	return statusCmd
 }
 
+type Table struct {
+	header []string
+	rows   [][]string
+}
+
+func (t *Table) SetHeader(header []string) {
+	t.header = header
+}
+
+func (t *Table) AddRow(row []string) {
+	t.rows = append(t.rows, row)
+}
+
+func (t *Table) Print() {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, strings.Join(t.header, "\t"))
+	fmt.Fprintln(w, "\t\t\t")
+
+	for _, row := range t.rows {
+		str := strings.Join(row, "\t")
+		fmt.Fprintln(w, str)
+	}
+
+	w.Flush()
+}
+
 func runStatus() error {
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	// Logger that logs to /dev/null to hide Firecracker binary output
+	logrus.SetOutput(devNull)
+
 	pidTablePath := config.PidTablePath()
 	pidTableFile, err := os.ReadFile(pidTablePath)
 	if err != nil {
@@ -40,10 +76,8 @@ func runStatus() error {
 
 	ctx := context.Background()
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, "VMID\tNAME\tSTATUS")
-
-	var vmData [][]string
+	table := &Table{}
+	table.SetHeader([]string{"VMID", "NAME", "STATUS"})
 
 	for name, entry := range pidTable {
 		socketPath := config.SocketPath(entry.VmId)
@@ -53,7 +87,7 @@ func runStatus() error {
 
 		m, err := firecracker.NewMachine(ctx, firecracker.Config{
 			SocketPath: socketPath,
-		})
+		}, firecracker.WithLogger(logrus.NewEntry(logrus.StandardLogger())))
 		if err != nil {
 			return err
 		}
@@ -63,15 +97,9 @@ func runStatus() error {
 			return err
 		}
 
-		vmData = append(vmData, []string{entry.VmId, name, *instance.State})
+		table.AddRow([]string{entry.VmId, name, *instance.State})
 	}
 
-	// Write the data to the tabwriter.Writer
-	for _, data := range vmData {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", data[0], data[1], data[2])
-	}
-
-	// Flush the writer to render the output
-	w.Flush()
+	table.Print()
 	return nil
 }
