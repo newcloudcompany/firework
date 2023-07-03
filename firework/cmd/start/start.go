@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/jlkiri/firework/internal/config"
@@ -79,12 +78,11 @@ func runStart() error {
 	}
 
 	slog.Info("Graceful shutdown successful.")
-
 	return nil
 }
 
 func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
-	kernelPath := filepath.Join(sources.KernelDir, "vmlinux")
+	kernelPath := getKernelPath()
 	rootFsPath := getRootFsPath()
 
 	mg := vm.NewMachineGroup()
@@ -107,9 +105,9 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 		}
 		slog.Info("Allocated free IP address", "node", node.Name, "addr", addr)
 
-		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", id))
-		logFifoPath := filepath.Join(sources.MiscDir, fmt.Sprintf("log-%s.fifo", id))
-		metricsFifoPath := filepath.Join(sources.MiscDir, fmt.Sprintf("metrics-%s.fifo", id))
+		socketPath := getSocketPath(id)
+		logFifoPath := getLogFifoPath(id)
+		metricsFifoPath := getMetricsFifoPath(id)
 		ipConfig, err := vm.NewMachineIpConfig(bridge.GetIPAddr(), addr, tap.Name)
 		if err != nil {
 			return nil, err
@@ -131,9 +129,8 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			Vcpu:             node.Vcpu,
 			Memory:           node.Memory,
 			OverlayDrivePath: overlayDrivePath,
-			// InitrdPath:      filepath.Join(wd, "assets", "initrd.cpio"),
-			VsockPath: filepath.Join(sources.VmDataDir, fmt.Sprintf("%s-v.sock", node.Name)),
-			IpConfig:  ipConfig,
+			VsockPath:        getVsockPath(node.Name),
+			IpConfig:         ipConfig,
 		})
 		if err != nil {
 			return nil, err

@@ -96,7 +96,6 @@ func ensureSquashFs(ctx context.Context, rootFsUrl, rootFsDir string) error {
 		if err != nil {
 			return err
 		}
-		slog.Info("Downloaded rootfs squashfs image.")
 	}
 
 	return nil
@@ -108,4 +107,24 @@ func getRootFsPath() string {
 		return envRootFsPath
 	}
 	return filepath.Join(sources.RootFsDir, "rootfs.squashfs")
+}
+
+func getKernelPath() string {
+	return filepath.Join(sources.KernelDir, "vmlinux")
+}
+
+func getSocketPath(vmId string) string {
+	return filepath.Join(sources.VmDataDir, vmId+".sock")
+}
+
+func getLogFifoPath(vmId string) string {
+	return filepath.Join(sources.MiscDir, "log-"+vmId+".fifo")
+}
+
+func getMetricsFifoPath(vmId string) string {
+	return filepath.Join(sources.MiscDir, "metrics-"+vmId+".fifo")
+}
+
+func getVsockPath(name string) string {
+	return filepath.Join(sources.VmDataDir, name+"-v.sock")
 }
