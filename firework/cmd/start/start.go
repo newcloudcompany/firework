@@ -11,7 +11,6 @@ import (
 	"github.com/jlkiri/firework/internal/ipam"
 	"github.com/jlkiri/firework/internal/network"
 	"github.com/jlkiri/firework/internal/vm"
-	"github.com/jlkiri/firework/sources"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 )
@@ -31,7 +30,7 @@ func NewStartCommand() *cobra.Command {
 
 func runStart() error {
 	// TODO: Remove this
-	os.Remove(sources.DbPath)
+	os.Remove(config.DbPath)
 
 	if err := prepareEnvironment(); err != nil {
 		return err
@@ -44,7 +43,7 @@ func runStart() error {
 	}
 	slog.Debug("Read config.json.")
 
-	ipamDb, err := ipam.NewIPAM(sources.DbPath, conf.SubnetCidr)
+	ipamDb, err := ipam.NewIPAM(config.DbPath, conf.SubnetCidr)
 	if err != nil {
 		return err
 	}
@@ -82,8 +81,8 @@ func runStart() error {
 }
 
 func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
-	kernelPath := getKernelPath()
-	rootFsPath := getRootFsPath()
+	kernelPath := config.KernelPath()
+	rootFsPath := config.RootFsPath()
 
 	mg := vm.NewMachineGroup()
 
@@ -105,9 +104,9 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 		}
 		slog.Info("Allocated free IP address", "node", node.Name, "addr", addr)
 
-		socketPath := getSocketPath(id)
-		logFifoPath := getLogFifoPath(id)
-		metricsFifoPath := getMetricsFifoPath(id)
+		socketPath := config.SocketPath(id)
+		logFifoPath := config.LogFifoPath(id)
+		metricsFifoPath := config.MetricsFifoPath(id)
 		ipConfig, err := vm.NewMachineIpConfig(bridge.GetIPAddr(), addr, tap.Name)
 		if err != nil {
 			return nil, err
@@ -129,7 +128,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			Vcpu:             node.Vcpu,
 			Memory:           node.Memory,
 			OverlayDrivePath: overlayDrivePath,
-			VsockPath:        getVsockPath(node.Name),
+			VsockPath:        config.VsockPath(node.Name),
 			IpConfig:         ipConfig,
 		})
 		if err != nil {

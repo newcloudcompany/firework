@@ -3,7 +3,6 @@ package stop
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 	"github.com/jlkiri/firework/internal/config"
 	"github.com/jlkiri/firework/internal/network"
 	"github.com/jlkiri/firework/internal/vm"
-	"github.com/jlkiri/firework/sources"
 	"github.com/spf13/cobra"
 )
 
@@ -39,11 +37,11 @@ func cleanup() {
 		log.Fatalf("Failed to cleanup network: %v", err)
 	}
 
-	if err := os.Remove(filepath.Join(sources.MiscDir, "ips.db")); err != nil {
+	if err := os.Remove(filepath.Join(config.MiscDir, "ips.db")); err != nil {
 		log.Println("Failed to remove ips.db:", err)
 	}
 
-	if err := os.RemoveAll(sources.VmDataDir); err != nil {
+	if err := os.RemoveAll(config.VmDataDir); err != nil {
 		log.Println("Failed to remove vm data dir:", err)
 	}
 }
@@ -51,7 +49,7 @@ func cleanup() {
 func runStop() error {
 	defer cleanup()
 
-	pidTablePath := filepath.Join(sources.MiscDir, "pid_table.json")
+	pidTablePath := config.PidTablePath()
 	pidTableFile, err := os.ReadFile(pidTablePath)
 	if err != nil {
 		return err
@@ -63,11 +61,7 @@ func runStop() error {
 	}
 
 	for _, entry := range pidTable {
-
-		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", entry.VmId))
-		// cmd := firecracker.VMCommandBuilder{}.
-		// 	Build(context.TODO())
-
+		socketPath := config.SocketPath(entry.VmId)
 		if _, err := os.Stat(socketPath); os.IsNotExist(err) {
 			continue
 		}

@@ -3,45 +3,44 @@ package start
 import (
 	"context"
 	"os"
-	"path/filepath"
 
-	"github.com/jlkiri/firework/sources"
+	"github.com/jlkiri/firework/internal/config"
 	"golang.org/x/exp/slog"
 )
 
 func prepareEnvironment() error {
 	// Create firework data directory and subdirectories
-	if err := os.MkdirAll(sources.DataDir, 0755); err != nil {
+	if err := os.MkdirAll(config.DataDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.RemoveAll(sources.VmDataDir); err != nil {
+	if err := os.RemoveAll(config.VmDataDir); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(sources.KernelDir, 0755); err != nil {
+	if err := os.MkdirAll(config.KernelDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(sources.RootFsDir, 0755); err != nil {
+	if err := os.MkdirAll(config.RootFsDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(sources.MiscDir, 0755); err != nil {
+	if err := os.MkdirAll(config.MiscDir, 0755); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(sources.VmDataDir, 0755); err != nil {
+	if err := os.MkdirAll(config.VmDataDir, 0755); err != nil {
 		return err
 	}
 
 	ctx := context.TODO()
-	err := ensureKernel(ctx, sources.KernelUrl, filepath.Join(sources.KernelDir, "vmlinux"))
+	err := ensureKernel(ctx, config.KernelUrl, config.KernelPath())
 	if err != nil {
 		return err
 	}
 
-	err = ensureSquashFs(ctx, sources.SquashFsUrl, sources.RootFsDir)
+	err = ensureSquashFs(ctx, config.SquashFsUrl, config.RootFsPath())
 	if err != nil {
 		return err
 	}
@@ -77,8 +76,7 @@ func ensureKernel(ctx context.Context, kernelUrl, kernelPath string) error {
 	return nil
 }
 
-func ensureSquashFs(ctx context.Context, rootFsUrl, rootFsDir string) error {
-	rootFsPath := filepath.Join(rootFsDir, "rootfs.squashfs")
+func ensureSquashFs(ctx context.Context, rootFsUrl, rootFsPath string) error {
 	if _, err := os.Stat(rootFsPath); os.IsNotExist(err) {
 		f, err := os.Create(rootFsPath)
 		if err != nil {
@@ -99,32 +97,4 @@ func ensureSquashFs(ctx context.Context, rootFsUrl, rootFsDir string) error {
 	}
 
 	return nil
-}
-
-func getRootFsPath() string {
-	envRootFsPath := os.Getenv("ROOTFS_PATH")
-	if envRootFsPath != "" {
-		return envRootFsPath
-	}
-	return filepath.Join(sources.RootFsDir, "rootfs.squashfs")
-}
-
-func getKernelPath() string {
-	return filepath.Join(sources.KernelDir, "vmlinux")
-}
-
-func getSocketPath(vmId string) string {
-	return filepath.Join(sources.VmDataDir, vmId+".sock")
-}
-
-func getLogFifoPath(vmId string) string {
-	return filepath.Join(sources.MiscDir, "log-"+vmId+".fifo")
-}
-
-func getMetricsFifoPath(vmId string) string {
-	return filepath.Join(sources.MiscDir, "metrics-"+vmId+".fifo")
-}
-
-func getVsockPath(name string) string {
-	return filepath.Join(sources.VmDataDir, name+"-v.sock")
 }

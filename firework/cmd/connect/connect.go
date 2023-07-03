@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk/vsock"
-	"github.com/jlkiri/firework/sources"
+	"github.com/jlkiri/firework/internal/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
 
 const VSOCK_LISTENER_PORT = 10000
-
-var vmDataDir = filepath.Join(sources.DataDir, "vm")
 
 func NewConnectCommand() *cobra.Command {
 	connectCmd := &cobra.Command{
@@ -39,7 +36,7 @@ func runConnect(vmName string) error {
 	}
 	defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }()
 
-	socket := filepath.Join(vmDataDir, fmt.Sprintf("%s-v.sock", vmName))
+	socket := config.VsockPath(vmName)
 	conn, err := vsock.DialContext(context.Background(), socket, VSOCK_LISTENER_PORT, vsock.WithDialTimeout(time.Second*5))
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %w", socket, err)

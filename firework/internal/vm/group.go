@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strconv"
 	"syscall"
 
 	firecracker "github.com/firecracker-microvm/firecracker-go-sdk"
-	"github.com/jlkiri/firework/sources"
+	"github.com/jlkiri/firework/internal/config"
 	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
 )
@@ -96,7 +95,7 @@ func (mg *MachineGroup) updatePidTable() error {
 		return err
 	}
 
-	pidTablePath := filepath.Join(sources.MiscDir, "pid_table.json")
+	pidTablePath := config.PidTablePath()
 	if err := os.WriteFile(pidTablePath, bytes, 0644); err != nil {
 		return err
 	}
