@@ -19,6 +19,8 @@ function install_vm_tools {
     curl -o "tmp/$fc_release.tgz" -L "https://github.com/firecracker-microvm/firecracker/releases/download/v1.3.3/$fc_release.tgz"
     tar -xvf "tmp/$fc_release.tgz" -C tmp
     cp "tmp/release-v1.3.3-x86_64/$fc_release" "$rootfs_base/usr/bin/firecracker"
+
+    rm -rf tmp
 }
 
 function debootstrap_rootfs {

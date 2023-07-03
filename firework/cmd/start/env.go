@@ -1,9 +1,7 @@
 package start
 
 import (
-	"fmt"
-	"io"
-	"net/http"
+	"context"
 	"os"
 	"path/filepath"
 
@@ -37,12 +35,13 @@ func prepareEnvironment() error {
 		return err
 	}
 
-	err := ensureKernel(sources.KernelUrl, filepath.Join(sources.KernelDir, "vmlinux"))
+	ctx := context.TODO()
+	err := ensureKernel(ctx, sources.KernelUrl, filepath.Join(sources.KernelDir, "vmlinux"))
 	if err != nil {
 		return err
 	}
 
-	err = ensureSquashFs(sources.SquashFsUrl, sources.RootFsDir)
+	err = ensureSquashFs(ctx, sources.SquashFsUrl, sources.RootFsDir)
 	if err != nil {
 		return err
 	}
@@ -50,9 +49,21 @@ func prepareEnvironment() error {
 	return nil
 }
 
-func ensureKernel(kernelUrl, kernelPath string) error {
+func ensureKernel(ctx context.Context, kernelUrl, kernelPath string) error {
 	if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
-		err := download(kernelUrl, kernelPath)
+		f, err := os.Create(kernelPath)
+		if err != nil {
+			return err
+		}
+
+		w := &progressWriter{
+			inner:   f,
+			written: 0,
+			total:   0,
+		}
+
+		slog.Info("Downloading kernel...")
+		err = download(ctx, kernelUrl, w)
 		if err != nil {
 			return err
 		}
@@ -61,16 +72,27 @@ func ensureKernel(kernelUrl, kernelPath string) error {
 		if err != nil {
 			return err
 		}
-		slog.Info("Downloaded kernel.")
 	}
 
 	return nil
 }
 
-func ensureSquashFs(rootFsUrl, rootFsDir string) error {
-	if _, err := os.Stat(filepath.Join(rootFsDir, "rootfs.squashfs")); os.IsNotExist(err) {
+func ensureSquashFs(ctx context.Context, rootFsUrl, rootFsDir string) error {
+	rootFsPath := filepath.Join(rootFsDir, "rootfs.squashfs")
+	if _, err := os.Stat(rootFsPath); os.IsNotExist(err) {
+		f, err := os.Create(rootFsPath)
+		if err != nil {
+			return err
+		}
 
-		err := download(rootFsUrl, filepath.Join(rootFsDir, "rootfs.squashfs"))
+		w := &progressWriter{
+			inner:   f,
+			written: 0,
+			total:   0,
+		}
+
+		slog.Info("Downloading squashfs rootfs image...")
+		err = download(ctx, rootFsUrl, w)
 		if err != nil {
 			return err
 		}
@@ -86,30 +108,4 @@ func getRootFsPath() string {
 		return envRootFsPath
 	}
 	return filepath.Join(sources.RootFsDir, "rootfs.squashfs")
-}
-
-func download(url string, dest string) error {
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

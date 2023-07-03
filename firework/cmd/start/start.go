@@ -108,7 +108,8 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 		slog.Info("Allocated free IP address", "node", node.Name, "addr", addr)
 
 		socketPath := filepath.Join(sources.VmDataDir, fmt.Sprintf("%s.sock", id))
-		fifoPath := filepath.Join(sources.MiscDir, fmt.Sprintf("%s.fifo", id))
+		logFifoPath := filepath.Join(sources.MiscDir, fmt.Sprintf("log-%s.fifo", id))
+		metricsFifoPath := filepath.Join(sources.MiscDir, fmt.Sprintf("metrics-%s.fifo", id))
 		ipConfig, err := vm.NewMachineIpConfig(bridge.GetIPAddr(), addr, tap.Name)
 		if err != nil {
 			return nil, err
@@ -123,7 +124,8 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			RootFsPath:       rootFsPath,
 			KernelImagePath:  kernelPath,
 			SocketPath:       socketPath,
-			FifoPath:         fifoPath,
+			LogFifoPath:      logFifoPath,
+			MetricsFifoPath:  metricsFifoPath,
 			Id:               id,
 			Cid:              cid,
 			Vcpu:             node.Vcpu,

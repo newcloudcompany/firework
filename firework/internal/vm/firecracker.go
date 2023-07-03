@@ -12,8 +12,6 @@ func createFirecrackerVM(ctx context.Context, cfg firecracker.Config, binPath, s
 	// Command interface automatically connects stdout/stderr/stdin to /dev/null if not specified.
 	cmd := firecracker.VMCommandBuilder{}.
 		WithSocketPath(socketPath).
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr).
 		WithBin(binPath).
 		Build(ctx)
 

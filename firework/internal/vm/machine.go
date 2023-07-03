@@ -13,7 +13,8 @@ type MachineOptions struct {
 	KernelImagePath  string
 	RootFsPath       string
 	SocketPath       string
-	FifoPath         string
+	LogFifoPath      string
+	MetricsFifoPath  string
 	VsockPath        string
 	InitrdPath       string
 	OverlayDrivePath string
@@ -54,7 +55,6 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 		SocketPath:      opts.SocketPath,
 		KernelImagePath: opts.KernelImagePath,
 		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off overlay_root=vdb i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd init=/sbin/overlay-init",
-		// KernelArgs: "console=ttyS0 noapic reboot=k panic=1 pci=off nomodule i8042.noaux i8042.nomux i8042.nopnp i8042.dumbkbd",
 		MachineCfg: models.MachineConfiguration{
 			VcpuCount:  firecracker.Int64(opts.Vcpu),
 			MemSizeMib: firecracker.Int64(opts.Memory),
@@ -75,7 +75,8 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 			},
 		},
 		FifoLogWriter: os.Stdout,
-		LogFifo:       opts.FifoPath,
+		LogFifo:       opts.LogFifoPath,
+		MetricsFifo:   opts.MetricsFifoPath,
 		LogLevel:      "Debug",
 		VsockDevices: []firecracker.VsockDevice{
 			{
