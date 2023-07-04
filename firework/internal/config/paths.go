@@ -16,6 +16,7 @@ const KernelDir = "/var/lib/firework/cache/kernel"
 const RootFsDir = "/var/lib/firework/cache/rootfs"
 const MiscDir = "/var/lib/firework/misc"
 const DbPath = "/var/lib/firework/misc/ips.db"
+const VmmLogPath = "/var/lib/firework/vmm.log"
 
 func RootFsPath() string {
 	envRootFsPath := os.Getenv("ROOTFS_PATH")

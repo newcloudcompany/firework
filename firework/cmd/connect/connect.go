@@ -15,9 +15,10 @@ import (
 
 func NewConnectCommand() *cobra.Command {
 	connectCmd := &cobra.Command{
-		Use:   "connect",
+		Use:   "connect <name>",
 		Short: "Connect to a VM",
 		Long:  `Connect to a VM`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			vmName := args[0]
 			return runConnect(vmName)

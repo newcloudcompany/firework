@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/jlkiri/firework/cmd/connect"
+	"github.com/jlkiri/firework/cmd/logs"
 	"github.com/jlkiri/firework/cmd/start"
 	"github.com/jlkiri/firework/cmd/status"
 	"github.com/jlkiri/firework/cmd/stop"
@@ -13,4 +14,5 @@ func AddCommands(cmd *cobra.Command) {
 	cmd.AddCommand(connect.NewConnectCommand())
 	cmd.AddCommand(stop.NewStopCommand())
 	cmd.AddCommand(status.NewStatusCommand())
+	cmd.AddCommand(logs.NewLogsCommand())
 }

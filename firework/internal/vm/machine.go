@@ -18,6 +18,7 @@ type MachineOptions struct {
 	VsockPath        string
 	InitrdPath       string
 	OverlayDrivePath string
+	VmmLogPath       string
 	Id               string
 	Cid              uint32
 	Memory           int64
@@ -74,10 +75,10 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 				PathOnHost:   firecracker.String(opts.OverlayDrivePath),
 			},
 		},
-		FifoLogWriter: os.Stdout,
-		LogFifo:       opts.LogFifoPath,
-		MetricsFifo:   opts.MetricsFifoPath,
-		LogLevel:      "Debug",
+		// FifoLogWriter: io.Discard,
+		LogFifo:     opts.LogFifoPath,
+		MetricsFifo: opts.MetricsFifoPath,
+		LogLevel:    "Debug",
 		VsockDevices: []firecracker.VsockDevice{
 			{
 				CID:  opts.Cid,
@@ -91,7 +92,7 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 		// InitrdPath:        opts.InitrdPath,
 	}
 
-	machine, err := createFirecrackerVM(ctx, cfg, "/bin/firecracker", opts.SocketPath)
+	machine, err := createFirecrackerVM(ctx, cfg, "/bin/firecracker", opts.VmmLogPath, opts.SocketPath)
 	if err != nil {
 		return nil, err
 	}

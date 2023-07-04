@@ -8,12 +8,7 @@
             "memory": 2048
         },
         {
-            "name": "worker-1",
-            "vcpu": 2,
-            "memory": 2048
-        },
-        {
-            "name": "worker-2",
+            "name": "worker",
             "vcpu": 2,
             "memory": 2048
         }

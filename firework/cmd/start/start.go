@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/jlkiri/firework/internal/config"
@@ -29,6 +30,8 @@ func NewStartCommand() *cobra.Command {
 }
 
 func runStart() error {
+	defer cleanup()
+
 	// TODO: Remove this
 	os.Remove(config.DbPath)
 
@@ -41,7 +44,7 @@ func runStart() error {
 	if err != nil {
 		return err
 	}
-	slog.Debug("Read config.json.")
+	slog.Debug("Read config.json.", "config", conf)
 
 	ipamDb, err := ipam.NewIPAM(config.DbPath, conf.SubnetCidr)
 	if err != nil {
@@ -53,22 +56,30 @@ func runStart() error {
 	if err != nil {
 		return err
 	}
-	slog.Debug("Created a bridge network.")
+	slog.Debug("Created a bridge network.", "cidr", conf.SubnetCidr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	vmmLogFifo, err := createVmmLogFifo(config.VmmLogPath)
+	if err != nil {
+		return fmt.Errorf("failed to create VMM log fifo: %w", err)
+	}
+
+	defer vmmLogFifo.Close()
+	slog.Debug("Created VMM log fifo", "path", config.VmmLogPath)
 
 	mg, err := createMachineGroup(ctx, conf.Nodes, bridge, ipamDb)
 	if err != nil {
 		return fmt.Errorf("failed to create machine group: %w", err)
 	}
-	slog.Debug("Created machine group from config.")
+	slog.Debug("Created machine group from config:", "config", conf)
 
 	if err := mg.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start machine group: %w", err)
 	}
 
-	slog.Debug("Installing signal handlers.")
+	slog.Debug("Installing SIGTERM and SIGINT signal handlers.")
 	vm.InstallSignalHandlers(ctx, mg)
 
 	if err := mg.Wait(ctx); err != nil {
@@ -118,17 +129,18 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 		}
 
 		machine, err := vm.CreateMachine(ctx, vm.MachineOptions{
+			Id:               id,
 			RootFsPath:       rootFsPath,
 			KernelImagePath:  kernelPath,
 			SocketPath:       socketPath,
 			LogFifoPath:      logFifoPath,
 			MetricsFifoPath:  metricsFifoPath,
-			Id:               id,
+			OverlayDrivePath: overlayDrivePath,
+			VmmLogPath:       config.VmmLogPath,
+			VsockPath:        config.VsockPath(node.Name),
 			Cid:              cid,
 			Vcpu:             node.Vcpu,
 			Memory:           node.Memory,
-			OverlayDrivePath: overlayDrivePath,
-			VsockPath:        config.VsockPath(node.Name),
 			IpConfig:         ipConfig,
 		})
 		if err != nil {
@@ -146,4 +158,24 @@ func generateCid() uint32 {
 	randomCid := rand.Intn(991)
 	randomCid += 10
 	return uint32(randomCid)
+}
+
+func createVmmLogFifo(vmmLogPath string) (*os.File, error) {
+	if _, err := os.Stat(vmmLogPath); os.IsNotExist(err) {
+		if err := syscall.Mkfifo(vmmLogPath, 0666); err != nil {
+			return nil, err
+		}
+	}
+
+	// Needs to be open for reading and writing.
+	f, err := os.OpenFile(config.VmmLogPath, os.O_RDWR, 0600)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
+func cleanup() {
+	_ = os.Remove(config.VmmLogPath)
 }
