@@ -3,6 +3,7 @@ package stop
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/jlkiri/firework/internal/config"
 	"github.com/jlkiri/firework/internal/network"
 	"github.com/jlkiri/firework/internal/vm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -60,6 +62,9 @@ func runStop() error {
 		return err
 	}
 
+	// Logger that logs to /dev/null to hide Firecracker binary output
+	logrus.SetOutput(io.Discard)
+
 	for _, entry := range pidTable {
 		socketPath := config.SocketPath(entry.VmId)
 		if _, err := os.Stat(socketPath); os.IsNotExist(err) {
@@ -68,7 +73,7 @@ func runStop() error {
 
 		m, err := firecracker.NewMachine(context.TODO(), firecracker.Config{
 			SocketPath: socketPath,
-		})
+		}, firecracker.WithLogger(logrus.NewEntry(logrus.StandardLogger())))
 		if err != nil {
 			return err
 		}

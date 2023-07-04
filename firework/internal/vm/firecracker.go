@@ -27,6 +27,8 @@ func createFirecrackerVM(ctx context.Context, cfg firecracker.Config, binPath, v
 	cmd := firecracker.VMCommandBuilder{}.
 		WithSocketPath(socketPath).
 		WithBin(binPath).
+		// WithStderr(os.Stderr).
+		// WithStdout(os.Stdout).
 		Build(ctx)
 
 	// Copy parent environment variables to the child process.

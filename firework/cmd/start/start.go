@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -17,20 +18,37 @@ import (
 )
 
 func NewStartCommand() *cobra.Command {
+	isDaemon := false
+
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start a VM cluster from config",
 		Long:  `Start a VM cluster from config`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStart()
+			return runStart(isDaemon)
 		},
 	}
 
+	// Add a run in background flag to start command
+	startCmd.Flags().BoolVarP(&isDaemon, "daemon", "d", false, "Run in background")
 	return startCmd
 }
 
-func runStart() error {
+func runStart(isDaemon bool) error {
 	defer cleanup()
+
+	if isDaemon {
+		cmd := exec.Command("firework", "start")
+		cmd.Env = os.Environ()
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setsid: true,
+		}
+
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	// TODO: Remove this
 	os.Remove(config.DbPath)

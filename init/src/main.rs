@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate log;
 
+use std::collections::HashMap;
 use std::{env, fs};
 
 use std::fs::File;
@@ -25,7 +26,16 @@ use nix::sys::{
 use nix::unistd::{mkdir as nix_mkdir, symlinkat};
 use nix::NixPath;
 
+use serde::Deserialize;
 use vsock::{VsockListener, VsockStream};
+
+#[derive(Deserialize)]
+    struct Metadata {
+        cid: u32,
+        ipv4: String,
+        hostname: String,
+        hosts: HashMap<String, String>,
+    }
 
 pub fn log_init() {
     // default to "info" level, just for this bin
@@ -279,21 +289,25 @@ fn main() -> Result<(), InitError> {
 
     info!("token: {}", token);
 
-    let cid = client
-        .get(&format!("http://{}/cid", addr))
+    let metadata = client
+        .get(&format!("http://{}", addr))
         .header("X-metadata-token", token)
+        .header("Accept", "application/json")
         .send()
         .expect("failed to send")
-        .text()
-        .expect("failed to text");
-
-    info!("cid: {}", cid);
-
-    // Make cid u32.
-    let cid = cid.parse::<u32>().expect("failed to convert");
+        .json::<Metadata>().expect("failed to json");
 
     // Enable packet forwarding.
     fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
+    // fs::write("/etc/hostname", metadata.hostname)?;
+
+    rustix::system::sethostname(metadata.hostname.as_bytes()).expect("failed to set hostname");
+
+    let hosts_string = metadata.hosts.iter()
+        .map(|(k, v)| format!("{} {}", v, k))
+        .collect::<Vec<String>>().join("\n");
+
+    fs::write("/etc/hosts", hosts_string)?;
 
     // Set standard PATH env variable.
     env::set_var(
@@ -301,7 +315,7 @@ fn main() -> Result<(), InitError> {
         "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     );
 
-    let listener = VsockListener::bind_with_cid_port(cid, 10000).expect("failed to bind vsock");
+    let listener = VsockListener::bind_with_cid_port(metadata.cid, 10000).expect("failed to bind vsock");
     for stream in listener.incoming() {
         std::thread::spawn(|| {
             handle_conn(stream.expect("bad connection")).expect("failed handling connection")

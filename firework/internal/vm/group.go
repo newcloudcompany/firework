@@ -3,10 +3,9 @@ package vm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	firecracker "github.com/firecracker-microvm/firecracker-go-sdk"
@@ -19,6 +18,10 @@ type Machine struct {
 	inner *firecracker.Machine
 	name  string
 	cid   uint32
+}
+
+func (m *Machine) Ipv4() string {
+	return m.inner.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.String()
 }
 
 type MachineGroup struct {
@@ -35,6 +38,13 @@ type Entry struct {
 // Machine name -> Entry
 type PidTable map[string]Entry
 
+type Metadata struct {
+	Cid      uint32            `json:"cid"`
+	Ipv4     string            `json:"ipv4"`
+	Hostname string            `json:"hostname"`
+	Hosts    map[string]string `json:"hosts"`
+}
+
 func NewMachineGroup() *MachineGroup {
 	return &MachineGroup{
 		machines: make([]Machine, 0),
@@ -44,6 +54,17 @@ func NewMachineGroup() *MachineGroup {
 }
 
 func (mg *MachineGroup) Start(ctx context.Context) error {
+	// Populate hosts map
+	hosts := make(map[string]string)
+	for _, m := range mg.machines {
+		ip, _, err := net.ParseCIDR(m.Ipv4())
+		if err != nil {
+			return err
+		}
+
+		hosts[m.name] = ip.String()
+	}
+
 	for _, m := range mg.machines {
 		machine := m
 		mg.eg.Go(func() error {
@@ -51,13 +72,17 @@ func (mg *MachineGroup) Start(ctx context.Context) error {
 				return err
 			}
 
-			ipAddr := machine.inner.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.String()
-			metadata, err := createMetadata(machine.cid, ipAddr)
+			meta, err := createMetadata(Metadata{
+				Cid:      machine.cid,
+				Ipv4:     machine.Ipv4(),
+				Hostname: machine.name,
+				Hosts:    hosts,
+			})
 			if err != nil {
 				return err
 			}
 
-			if err := machine.inner.SetMetadata(ctx, metadata); err != nil {
+			if err := machine.inner.SetMetadata(ctx, meta); err != nil {
 				return err
 			}
 
@@ -124,21 +149,19 @@ func (mg *MachineGroup) AddMachine(machine *firecracker.Machine, name string, ci
 	return nil
 }
 
-func createMetadata(cid uint32, ipAddr string) (map[string]interface{}, error) {
-	jsonMetadata := fmt.Sprintf(`
-	{
-		"cid": "%s",
-		"ipv4": "%s"
-	}
-	`, strconv.Itoa(int(cid)), ipAddr)
-
-	var metadata map[string]interface{}
-	err := json.Unmarshal([]byte(jsonMetadata), &metadata)
+func createMetadata(metadata Metadata) (map[string]interface{}, error) {
+	jsonString, err := json.Marshal(metadata)
 	if err != nil {
 		return nil, err
 	}
 
-	return metadata, nil
+	var apiMetadata map[string]interface{}
+	err = json.Unmarshal(jsonString, &apiMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiMetadata, nil
 }
 
 func InstallSignalHandlers(ctx context.Context, mg *MachineGroup) {
