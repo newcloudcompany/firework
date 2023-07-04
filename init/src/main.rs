@@ -26,6 +26,8 @@ use nix::sys::{
 use nix::unistd::{mkdir as nix_mkdir, symlinkat};
 use nix::NixPath;
 
+use rustix::system::sethostname;
+use rustix::termios::{tcsetwinsize, Winsize};
 use serde::Deserialize;
 use vsock::{VsockListener, VsockStream};
 
@@ -299,9 +301,8 @@ fn main() -> Result<(), InitError> {
 
     // Enable packet forwarding.
     fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
-    // fs::write("/etc/hostname", metadata.hostname)?;
 
-    rustix::system::sethostname(metadata.hostname.as_bytes()).expect("failed to set hostname");
+    sethostname(metadata.hostname.as_bytes()).expect("failed to set hostname");
 
     let hosts_string = metadata.hosts.iter()
         .map(|(k, v)| format!("{} {}", v, k))
@@ -504,7 +505,47 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
     });
 
     std::thread::spawn(move || {
-        let _ = io::copy(&mut reader, &mut primary);
+        let mut buffer = vec![0u8; 1024];
+
+        // let _ = io::copy(&mut reader, &mut primary);
+
+        loop {
+            match reader.read(&mut buffer) {
+                Ok(n) if n > 0 => {
+                    let slice = &buffer[..n];
+                    let message = String::from_utf8_lossy(slice);
+
+                    let msg = "RESIZE,";
+
+                    // Check if data is a resize terminal message.
+                    if message.starts_with(msg) {
+                        let parts = &buffer[msg.len()..].splitn(3, |byte| byte == &b',').collect::<Vec<_>>();
+                        if parts.len() == 3 {
+                            let width_str = String::from_utf8_lossy(parts[0]);
+                            let height_str = String::from_utf8_lossy(parts[1]);
+                            info!("width: {}, height: {}", width_str, height_str);
+                            let width = width_str.parse::<u16>().expect("failed to parse width");
+                            let height = height_str.parse::<u16>().expect("failed to parse height");
+
+                            let ws = Winsize {
+                                ws_row: height,
+                                ws_col: width,
+                                ws_xpixel: 0,
+                                ws_ypixel: 0,
+                            };
+
+                            tcsetwinsize(&primary, ws).expect("tcsetwinsize");
+                            continue;
+                        }
+                    }
+
+                    let _ = primary.write_all(slice);
+                }
+                _ => break,
+            }
+        }
+
+        
     });
 
     loop {
