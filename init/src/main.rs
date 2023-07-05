@@ -12,6 +12,9 @@ use std::process::Command;
 use std::sync::mpsc;
 
 use anyhow::Error;
+use nom::bytes::complete::tag;
+use nom::sequence::{tuple, terminated, preceded};
+use nom::number::Endianness;
 // use futures::{StreamExt, TryFutureExt, TryStreamExt};
 use ptyca::{openpty, PtyCommandExt};
 
@@ -432,6 +435,20 @@ enum InitError {
     UnhandledError(#[from] Error),
 }
 
+use nom::character::complete::u16;
+
+fn try_parse_resize_msg(input: &[u8]) -> nom::IResult<&[u8], (u16, u16)> {
+    preceded(tag("RESIZE,"), tuple((
+        terminated(u16, tag(",")),
+        terminated(u16, tag(","))
+    )))(input)
+}
+
+#[test]
+fn test_parse_resize_msg() {
+    assert_eq!(try_parse_resize_msg(b"RESIZE,80,24,"), Ok((&[][..], (80, 24))));
+}
+
 fn mount<P1: ?Sized + NixPath, P2: ?Sized + NixPath, P3: ?Sized + NixPath, P4: ?Sized + NixPath>(
     source: Option<&P1>,
     target: &P2,
@@ -468,8 +485,9 @@ enum Msg {
 }
 
 fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>> {
-    let mut reader = writer.try_clone()?;
-    println!("Incoming connection from {}...", writer.peer_addr()?);
+    info!("Incoming connection from {}", writer.peer_addr()?);
+
+    let reader = writer.try_clone()?;
 
     let (primary, secondary) = openpty()?;
     let primary_raw_fd = primary.as_raw_fd();
@@ -483,83 +501,66 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
     let (tx, rx) = mpsc::channel();
     let primary_read_tx = tx.clone();
 
-    let mut primary = unsafe { File::from_raw_fd(primary_raw_fd) };
-    let mut primary_clone = primary.try_clone()?;
+    let primary = unsafe { File::from_raw_fd(primary_raw_fd) };
+    let primary_clone = primary.try_clone()?;
 
-    std::thread::spawn(move || {
-        let mut buffer = vec![0u8; 1024];
-        loop {
-            match primary_clone.read(&mut buffer) {
-                Ok(n) if n > 0 => {
-                    let slice = &buffer[..n];
-                    let _ = primary_read_tx.send(Msg::PrimaryRead(slice.to_vec()));
-                }
-                _ => break,
-            }
-        }
-    });
-
-    std::thread::spawn(move || {
+    let conn_reader = std::thread::spawn(move || copy_primary_to_conn(primary_clone, primary_read_tx));
+    let primary_reader = std::thread::spawn(move || copy_conn_to_primary(reader, primary));
+    let child_waiter = std::thread::spawn(move || {
         let _ = child.wait();
         let _ = tx.send(Msg::Exit);
-    });
-
-    std::thread::spawn(move || {
-        let mut buffer = vec![0u8; 1024];
-
-        // let _ = io::copy(&mut reader, &mut primary);
-
-        loop {
-            match reader.read(&mut buffer) {
-                Ok(n) if n > 0 => {
-                    let slice = &buffer[..n];
-                    let message = String::from_utf8_lossy(slice);
-
-                    let msg = "RESIZE,";
-
-                    // Check if data is a resize terminal message.
-                    if message.starts_with(msg) {
-                        let parts = &buffer[msg.len()..].splitn(3, |byte| byte == &b',').collect::<Vec<_>>();
-                        if parts.len() == 3 {
-                            let width_str = String::from_utf8_lossy(parts[0]);
-                            let height_str = String::from_utf8_lossy(parts[1]);
-                            info!("width: {}, height: {}", width_str, height_str);
-                            let width = width_str.parse::<u16>().expect("failed to parse width");
-                            let height = height_str.parse::<u16>().expect("failed to parse height");
-
-                            let ws = Winsize {
-                                ws_row: height,
-                                ws_col: width,
-                                ws_xpixel: 0,
-                                ws_ypixel: 0,
-                            };
-
-                            tcsetwinsize(&primary, ws).expect("tcsetwinsize");
-                            continue;
-                        }
-                    }
-
-                    let _ = primary.write_all(slice);
-                }
-                _ => break,
-            }
-        }
-
-        
     });
 
     loop {
         let msg = rx.recv()?;
         match msg {
             Msg::PrimaryRead(buffer) => {
-                let _ = writer.write_all(&buffer);
-                let _ = writer.flush();
+                writer.write_all(&buffer)?;
+                writer.flush()?;
             }
             Msg::Exit => break,
         }
     }
 
-    println!("Closing connection from {}...", writer.peer_addr()?);
-    writer.shutdown(std::net::Shutdown::Both)?; // TODO: Maybe properly join the writer to primary instead.
+    let _ = child_waiter.join().or(Err("Failed to join child_waiter thread"))?;
+    let _ = conn_reader.join().or(Err("Failed to join conn_reader thread"))?;
+    let _ = primary_reader.join().or(Err("Failed to join primary_reader thread"))?;
+
+    writer.shutdown(std::net::Shutdown::Both)?;
+
+    info!("Closed connection from {}", writer.peer_addr()?);
+    Ok(())
+}
+
+fn copy_conn_to_primary(mut conn: VsockStream, mut primary: File) -> Result<(), anyhow::Error> {
+    let mut buffer = vec![0u8; 1024];
+    while let Ok(n) =  conn.read(&mut buffer) {
+        if n == 0 { break }
+
+        let slice = &buffer[..n];
+        match try_parse_resize_msg(slice) {
+            Ok((_, (width, height))) => {
+                let ws = Winsize {
+                    ws_row: height,
+                    ws_col: width,
+                    ws_xpixel: 0,
+                    ws_ypixel: 0,
+                };
+
+                tcsetwinsize(&primary, ws)?
+            },
+            _ =>  primary.write_all(slice)?
+        }
+    }
+    Ok(())
+}
+
+fn copy_primary_to_conn(mut primary: File, tx: mpsc::Sender<Msg>) -> Result<(), anyhow::Error> {
+    let mut buffer = vec![0u8; 1024];
+    while let Ok(n) =  primary.read(&mut buffer) {
+        if n == 0 { break }
+        let slice = &buffer[..n];
+        let _ = tx.send(Msg::PrimaryRead(slice.to_vec()));
+    }
     Ok(())
 }
