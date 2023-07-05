@@ -29,6 +29,7 @@ use nix::sys::{
 use nix::unistd::{mkdir as nix_mkdir, symlinkat};
 use nix::NixPath;
 
+use rustix::fs::MountFlags;
 use rustix::system::sethostname;
 use rustix::termios::{tcsetwinsize, Winsize};
 use serde::Deserialize;
@@ -53,7 +54,7 @@ pub fn log_init() {
         .init();
 }
 
-fn main() -> Result<(), InitError> {
+fn main() -> Result<(), anyhow::Error> {
     log_init();
 
     // can't put these as const unfortunately...
@@ -73,12 +74,13 @@ fn main() -> Result<(), InitError> {
 
     info!("Mounting /dev/pts");
     mkdir("/dev/pts", chmod_0755).ok();
-    mount(
-        Some("devpts"),
-        "/dev/pts",
-        Some("devpts"),
-        MsFlags::MS_NOEXEC | MsFlags::MS_NOSUID | MsFlags::MS_NOATIME,
-        Some("mode=0620,gid=5,ptmxmode=666"),
+
+    rustix::fs::mount(
+        "devpts",
+        "/dev/pts", 
+        "devpts", 
+        MountFlags::NOEXEC | MountFlags::NOSUID | MountFlags::NOATIME,
+        "newinstance,mode=666,ptmxmode=666"
     )?;
 
     info!("Mounting /dev/mqueue");
@@ -522,11 +524,11 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
         }
     }
 
+    writer.shutdown(std::net::Shutdown::Both)?;
+
     let _ = child_waiter.join().or(Err("Failed to join child_waiter thread"))?;
     let _ = conn_reader.join().or(Err("Failed to join conn_reader thread"))?;
     let _ = primary_reader.join().or(Err("Failed to join primary_reader thread"))?;
-
-    writer.shutdown(std::net::Shutdown::Both)?;
 
     info!("Closed connection from {}", writer.peer_addr()?);
     Ok(())
