@@ -10,6 +10,8 @@ import (
 	"github.com/firecracker-microvm/firecracker-go-sdk/client/models"
 )
 
+// The file at VmmLogPath and InstanceFifoLogWriter are the same thing by design
+// but can be used to split the logs into two different locations.
 type MachineOptions struct {
 	KernelImagePath       string
 	RootFsPath            string
