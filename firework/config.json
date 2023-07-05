@@ -3,7 +3,12 @@
     "gateway": "10.0.0.241/28",
     "nodes": [
         {
-            "name": "controlplane",
+            "name": "node1",
+            "vcpu": 2,
+            "memory": 4096
+        },
+        {
+            "name": "node2",
             "vcpu": 2,
             "memory": 4096
         }

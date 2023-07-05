@@ -53,3 +53,7 @@ func OverlayDrivePath(vmId string) string {
 func PidTablePath() string {
 	return filepath.Join(MiscDir, "pid_table.json")
 }
+
+func StdioPath(vmId string) string {
+	return filepath.Join(VmDataDir, vmId+".stdio")
+}

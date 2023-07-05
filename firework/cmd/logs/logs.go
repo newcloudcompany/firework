@@ -30,7 +30,7 @@ func runVmmLogs() error {
 }
 
 func runVmLogs(vmId string) error {
-	return followLogs(config.LogFifoPath(vmId))
+	return followLogs(config.StdioPath(vmId))
 }
 
 func followLogs(path string) error {

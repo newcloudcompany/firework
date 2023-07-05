@@ -3,6 +3,7 @@ package start
 import (
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -87,7 +88,7 @@ func runStart(isDaemon bool) error {
 	defer vmmLogFifo.Close()
 	slog.Debug("Created VMM log fifo", "path", config.VmmLogPath)
 
-	mg, err := createMachineGroup(ctx, conf.Nodes, bridge, ipamDb)
+	mg, err := createMachineGroup(ctx, conf.Nodes, bridge, ipamDb, vmmLogFifo)
 	if err != nil {
 		return fmt.Errorf("failed to create machine group: %w", err)
 	}
@@ -109,7 +110,7 @@ func runStart(isDaemon bool) error {
 	return nil
 }
 
-func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM) (*vm.MachineGroup, error) {
+func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM, fifoLogWriter io.Writer) (*vm.MachineGroup, error) {
 	kernelPath := config.KernelPath()
 	rootFsPath := config.RootFsPath()
 
@@ -146,20 +147,27 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			return nil, err
 		}
 
+		stdioWriter, err := createStdioWriter(id)
+		if err != nil {
+			return nil, err
+		}
+
 		machine, err := vm.CreateMachine(ctx, vm.MachineOptions{
-			Id:               id,
-			RootFsPath:       rootFsPath,
-			KernelImagePath:  kernelPath,
-			SocketPath:       socketPath,
-			LogFifoPath:      logFifoPath,
-			MetricsFifoPath:  metricsFifoPath,
-			OverlayDrivePath: overlayDrivePath,
-			VmmLogPath:       config.VmmLogPath,
-			VsockPath:        config.VsockPath(node.Name),
-			Cid:              cid,
-			Vcpu:             node.Vcpu,
-			Memory:           node.Memory,
-			IpConfig:         ipConfig,
+			Id:                    id,
+			RootFsPath:            rootFsPath,
+			KernelImagePath:       kernelPath,
+			SocketPath:            socketPath,
+			InstanceLogFifoPath:   logFifoPath,
+			InstanceFifoLogWriter: fifoLogWriter,
+			Stdio:                 stdioWriter,
+			MetricsFifoPath:       metricsFifoPath,
+			OverlayDrivePath:      overlayDrivePath,
+			VmmLogPath:            config.VmmLogPath,
+			VsockPath:             config.VsockPath(node.Name),
+			Cid:                   cid,
+			Vcpu:                  node.Vcpu,
+			Memory:                node.Memory,
+			IpConfig:              ipConfig,
 		})
 		if err != nil {
 			return nil, err
@@ -187,6 +195,15 @@ func createVmmLogFifo(vmmLogPath string) (*os.File, error) {
 
 	// Needs to be open for reading and writing.
 	f, err := os.OpenFile(config.VmmLogPath, os.O_RDWR, 0600)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
+func createStdioWriter(vmId string) (*os.File, error) {
+	f, err := os.Create(config.StdioPath(vmId))
 	if err != nil {
 		return nil, err
 	}

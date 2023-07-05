@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"io"
 	"os"
 	"syscall"
 
@@ -22,13 +23,13 @@ func openFileLogger(vmmLogPath string) (*logrus.Entry, error) {
 	return logrus.NewEntry(logger), nil
 }
 
-func createFirecrackerVM(ctx context.Context, cfg firecracker.Config, binPath, vmmLogPath, socketPath string) (*firecracker.Machine, error) {
+func createFirecrackerVM(ctx context.Context, cfg firecracker.Config, stdio io.Writer, binPath, vmmLogPath, socketPath string) (*firecracker.Machine, error) {
 	// Command interface automatically connects stdout/stderr/stdin to /dev/null if not specified.
 	cmd := firecracker.VMCommandBuilder{}.
 		WithSocketPath(socketPath).
 		WithBin(binPath).
-		// WithStderr(os.Stderr).
-		// WithStdout(os.Stdout).
+		WithStdout(stdio).
+		WithStderr(stdio).
 		Build(ctx)
 
 	// Copy parent environment variables to the child process.

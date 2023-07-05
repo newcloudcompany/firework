@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"io"
 	"net"
 	"os"
 
@@ -10,20 +11,22 @@ import (
 )
 
 type MachineOptions struct {
-	KernelImagePath  string
-	RootFsPath       string
-	SocketPath       string
-	LogFifoPath      string
-	MetricsFifoPath  string
-	VsockPath        string
-	InitrdPath       string
-	OverlayDrivePath string
-	VmmLogPath       string
-	Id               string
-	Cid              uint32
-	Memory           int64
-	Vcpu             int64
-	IpConfig         *machineIpConfig
+	KernelImagePath       string
+	RootFsPath            string
+	SocketPath            string
+	InstanceLogFifoPath   string
+	InstanceFifoLogWriter io.Writer
+	Stdio                 io.Writer
+	MetricsFifoPath       string
+	VsockPath             string
+	InitrdPath            string
+	OverlayDrivePath      string
+	VmmLogPath            string
+	Id                    string
+	Cid                   uint32
+	Memory                int64
+	Vcpu                  int64
+	IpConfig              *machineIpConfig
 }
 
 type machineIpConfig struct {
@@ -75,10 +78,10 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 				PathOnHost:   firecracker.String(opts.OverlayDrivePath),
 			},
 		},
-		// FifoLogWriter: io.Discard,
-		LogFifo:     opts.LogFifoPath,
-		MetricsFifo: opts.MetricsFifoPath,
-		LogLevel:    "Debug",
+		FifoLogWriter: opts.InstanceFifoLogWriter,
+		LogFifo:       opts.InstanceLogFifoPath,
+		MetricsFifo:   opts.MetricsFifoPath,
+		LogLevel:      "Debug",
 		VsockDevices: []firecracker.VsockDevice{
 			{
 				CID:  opts.Cid,
@@ -89,10 +92,16 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 		MmdsVersion:       firecracker.MMDSv2,
 		ForwardSignals:    []os.Signal{},
 		NetworkInterfaces: []firecracker.NetworkInterface{networkInterface},
-		// InitrdPath:        opts.InitrdPath,
 	}
 
-	machine, err := createFirecrackerVM(ctx, cfg, "/bin/firecracker", opts.VmmLogPath, opts.SocketPath)
+	machine, err := createFirecrackerVM(
+		ctx,
+		cfg,
+		opts.Stdio,
+		"/bin/firecracker",
+		opts.VmmLogPath,
+		opts.SocketPath,
+	)
 	if err != nil {
 		return nil, err
 	}
