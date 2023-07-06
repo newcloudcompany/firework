@@ -98,7 +98,7 @@ fn main() -> Result<(), anyhow::Error> {
         .collect::<Vec<String>>().join("\n");
 
     fs::write("/etc/hosts", hosts_string)?;
-    
+
     // Set standard PATH env variable.
     env::set_var(
         "PATH",
@@ -115,33 +115,6 @@ fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-#[derive(Debug, thiserror::Error)]
-enum InitError {
-    #[error("couldn't mount {} onto {}, because: {}", source, target, error)]
-    Mount {
-        source: String,
-        target: String,
-        #[source]
-        error: nix::Error,
-    },
-
-    #[error("couldn't mkdir {}, because: {}", path, error)]
-    Mkdir {
-        path: String,
-        #[source]
-        error: nix::Error,
-    },
-
-    #[error("an unhandled error occurred: {}", 0)]
-    UnhandledNixError(#[from] nix::Error),
-
-    #[error("an unhandled IO error occurred: {}", 0)]
-    UnhandledIoError(#[from] io::Error),
-
-    #[error("an unhandled error occurred: {}", 0)]
-    UnhandledError(#[from] Error),
-}
-
 use nom::character::complete::u16;
 
 fn try_parse_resize_msg(input: &[u8]) -> nom::IResult<&[u8], (u16, u16)> {
@@ -154,36 +127,6 @@ fn try_parse_resize_msg(input: &[u8]) -> nom::IResult<&[u8], (u16, u16)> {
 #[test]
 fn test_parse_resize_msg() {
     assert_eq!(try_parse_resize_msg(b"RESIZE,80,24,"), Ok((&[][..], (80, 24))));
-}
-
-fn mount<P1: ?Sized + NixPath, P2: ?Sized + NixPath, P3: ?Sized + NixPath, P4: ?Sized + NixPath>(
-    source: Option<&P1>,
-    target: &P2,
-    fstype: Option<&P3>,
-    flags: MsFlags,
-    data: Option<&P4>,
-) -> Result<(), InitError> {
-    nix_mount(source, target, fstype, flags, data).map_err(|error| InitError::Mount {
-        source: source
-            .map(|p| {
-                p.with_nix_path(|cs| cs.to_owned().into_string().ok().unwrap_or_default())
-                    .unwrap_or_else(|_| String::new())
-            })
-            .unwrap_or_else(String::new),
-        target: target
-            .with_nix_path(|cs| cs.to_owned().into_string().ok().unwrap_or_default())
-            .unwrap_or_else(|_| String::new()),
-        error,
-    })
-}
-
-fn mkdir<P: ?Sized + NixPath>(path: &P, mode: Mode) -> Result<(), InitError> {
-    nix_mkdir(path, mode).map_err(|error| InitError::Mkdir {
-        path: path
-            .with_nix_path(|cs| cs.to_owned().into_string().ok().unwrap_or_default())
-            .unwrap_or_else(|_| String::new()),
-        error,
-    })
 }
 
 enum Msg {
