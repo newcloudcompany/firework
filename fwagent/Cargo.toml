@@ -1,19 +1,16 @@
 [package]
-name = "post-init"
+name = "fwagent"
 version = "0.1.0"
 authors = ["jlkiri"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-libc = "*"
-nix = "*"
 env_logger = "*"
 log = "*"
 serde_derive = "*"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "*"
 anyhow = "*"
-thiserror = "*"
 vsock = "0.3.0"
 rustix = { version = "0.38.2", features = ["pty", "termios", "process", "system"] }
 ptyca = { version = "0.1.0", path = "../ptyca" }
@@ -22,6 +19,3 @@ nom = "7.1.3"
 
 [profile.release]
 lto = true
-
-# [patch.crates-io]
-# tokio-vsock = { git = "https://github.com/jeromegn/tokio-vsock.git", branch = "fix-io-errors" }

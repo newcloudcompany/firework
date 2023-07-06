@@ -13,8 +13,8 @@ use std::sync::mpsc;
 
 use anyhow::Error;
 use nom::bytes::complete::tag;
-use nom::sequence::{tuple, terminated, preceded};
-use nom::number::Endianness;
+use nom::sequence::{preceded, terminated, tuple};
+
 // use futures::{StreamExt, TryFutureExt, TryStreamExt};
 use ptyca::{openpty, PtyCommandExt};
 
@@ -36,12 +36,12 @@ use serde::Deserialize;
 use vsock::{VsockListener, VsockStream};
 
 #[derive(Deserialize)]
-    struct Metadata {
-        cid: u32,
-        ipv4: String,
-        hostname: String,
-        hosts: HashMap<String, String>,
-    }
+struct Metadata {
+    cid: u32,
+    ipv4: String,
+    hostname: String,
+    hosts: HashMap<String, String>,
+}
 
 pub fn log_init() {
     // default to "info" level, just for this bin
@@ -77,10 +77,10 @@ fn main() -> Result<(), anyhow::Error> {
 
     rustix::fs::mount(
         "devpts",
-        "/dev/pts", 
-        "devpts", 
+        "/dev/pts",
+        "devpts",
         MountFlags::NOEXEC | MountFlags::NOSUID | MountFlags::NOATIME,
-        "newinstance,mode=666,ptmxmode=666"
+        "newinstance,mode=666,ptmxmode=666",
     )?;
 
     info!("Mounting /dev/mqueue");
@@ -302,16 +302,20 @@ fn main() -> Result<(), anyhow::Error> {
         .header("Accept", "application/json")
         .send()
         .expect("failed to send")
-        .json::<Metadata>().expect("failed to json");
+        .json::<Metadata>()
+        .expect("failed to json");
 
     // Enable packet forwarding.
     fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
 
     sethostname(metadata.hostname.as_bytes()).expect("failed to set hostname");
 
-    let hosts_string = metadata.hosts.iter()
+    let hosts_string = metadata
+        .hosts
+        .iter()
         .map(|(k, v)| format!("{} {}", v, k))
-        .collect::<Vec<String>>().join("\n");
+        .collect::<Vec<String>>()
+        .join("\n");
 
     fs::write("/etc/hosts", hosts_string)?;
 
@@ -321,7 +325,8 @@ fn main() -> Result<(), anyhow::Error> {
         "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     );
 
-    let listener = VsockListener::bind_with_cid_port(metadata.cid, 10000).expect("failed to bind vsock");
+    let listener =
+        VsockListener::bind_with_cid_port(metadata.cid, 10000).expect("failed to bind vsock");
     for stream in listener.incoming() {
         std::thread::spawn(|| {
             handle_conn(stream.expect("bad connection")).expect("failed handling connection")
@@ -440,15 +445,18 @@ enum InitError {
 use nom::character::complete::u16;
 
 fn try_parse_resize_msg(input: &[u8]) -> nom::IResult<&[u8], (u16, u16)> {
-    preceded(tag("RESIZE,"), tuple((
-        terminated(u16, tag(",")),
-        terminated(u16, tag(","))
-    )))(input)
+    preceded(
+        tag("RESIZE,"),
+        tuple((terminated(u16, tag(",")), terminated(u16, tag(",")))),
+    )(input)
 }
 
 #[test]
 fn test_parse_resize_msg() {
-    assert_eq!(try_parse_resize_msg(b"RESIZE,80,24,"), Ok((&[][..], (80, 24))));
+    assert_eq!(
+        try_parse_resize_msg(b"RESIZE,80,24,"),
+        Ok((&[][..], (80, 24)))
+    );
 }
 
 fn mount<P1: ?Sized + NixPath, P2: ?Sized + NixPath, P3: ?Sized + NixPath, P4: ?Sized + NixPath>(
@@ -506,7 +514,8 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
     let primary = unsafe { File::from_raw_fd(primary_raw_fd) };
     let primary_clone = primary.try_clone()?;
 
-    let conn_reader = std::thread::spawn(move || copy_primary_to_conn(primary_clone, primary_read_tx));
+    let conn_reader =
+        std::thread::spawn(move || copy_primary_to_conn(primary_clone, primary_read_tx));
     let primary_reader = std::thread::spawn(move || copy_conn_to_primary(reader, primary));
     let child_waiter = std::thread::spawn(move || {
         let _ = child.wait();
@@ -526,9 +535,15 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
 
     writer.shutdown(std::net::Shutdown::Both)?;
 
-    let _ = child_waiter.join().or(Err("Failed to join child_waiter thread"))?;
-    let _ = conn_reader.join().or(Err("Failed to join conn_reader thread"))?;
-    let _ = primary_reader.join().or(Err("Failed to join primary_reader thread"))?;
+    child_waiter
+        .join()
+        .or(Err("Failed to join child_waiter thread"))?;
+    let _ = conn_reader
+        .join()
+        .or(Err("Failed to join conn_reader thread"))?;
+    let _ = primary_reader
+        .join()
+        .or(Err("Failed to join primary_reader thread"))?;
 
     info!("Closed connection from {}", writer.peer_addr()?);
     Ok(())
@@ -536,8 +551,10 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
 
 fn copy_conn_to_primary(mut conn: VsockStream, mut primary: File) -> Result<(), anyhow::Error> {
     let mut buffer = vec![0u8; 1024];
-    while let Ok(n) =  conn.read(&mut buffer) {
-        if n == 0 { break }
+    while let Ok(n) = conn.read(&mut buffer) {
+        if n == 0 {
+            break;
+        }
 
         let slice = &buffer[..n];
         match try_parse_resize_msg(slice) {
@@ -550,8 +567,8 @@ fn copy_conn_to_primary(mut conn: VsockStream, mut primary: File) -> Result<(), 
                 };
 
                 tcsetwinsize(&primary, ws)?
-            },
-            _ =>  primary.write_all(slice)?
+            }
+            _ => primary.write_all(slice)?,
         }
     }
     Ok(())
@@ -559,8 +576,10 @@ fn copy_conn_to_primary(mut conn: VsockStream, mut primary: File) -> Result<(), 
 
 fn copy_primary_to_conn(mut primary: File, tx: mpsc::Sender<Msg>) -> Result<(), anyhow::Error> {
     let mut buffer = vec![0u8; 1024];
-    while let Ok(n) =  primary.read(&mut buffer) {
-        if n == 0 { break }
+    while let Ok(n) = primary.read(&mut buffer) {
+        if n == 0 {
+            break;
+        }
         let slice = &buffer[..n];
         let _ = tx.send(Msg::PrimaryRead(slice.to_vec()));
     }

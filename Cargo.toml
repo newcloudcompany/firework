@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "init",
-    "post-init",
+    "fwagent",
     "vsock-client",
     "ptyca"
 ]
