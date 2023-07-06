@@ -5,7 +5,7 @@ set -euo pipefail
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $script_dir
 
-rootfs_base="debian-bullseye-rootfs"
+rootfs_base="debian-bookworm-rootfs"
 squashfs_img="rootfs.squashfs"
 packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git"
 
@@ -25,12 +25,12 @@ function install_vm_tools {
 
 function debootstrap_rootfs {
     if [[ ! -e "$rootfs_base" ]]; then
-        echo "Creating debian bullseye rootfs..."
+        echo "Creating debian bookworm rootfs..."
         debootstrap \
             --arch=amd64 \
             --variant=minbase \
             --include=${packages// /,} \
-            bullseye "$rootfs_base" \
+            bookworm "$rootfs_base" \
             http://deb.debian.org/debian/    
     fi
     
@@ -38,7 +38,8 @@ function debootstrap_rootfs {
     mkdir -p "$rootfs_base/overlay" "$rootfs_base/mnt" "$rootfs_base/rom"
     cp init "$rootfs_base/sbin/init"
     cp overlay-init "$rootfs_base/sbin/overlay-init"
-    
+
+    cp fwagent "$rootfs_base/usr/bin/fwagent"
 
     echo "Installing vm tools in the rootfs..."
     install_vm_tools

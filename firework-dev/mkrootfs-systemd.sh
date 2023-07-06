@@ -5,7 +5,7 @@ set -euo pipefail
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $script_dir
 
-rootfs_base="debian-bullseye-rootfs-bookworm"
+rootfs_base="debian-bookworm-rootfs-systemd"
 squashfs_img="rootfs.squashfs"
 packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git systemd systemd-sysv"
 
@@ -25,7 +25,7 @@ function install_vm_tools {
 
 function debootstrap_rootfs {
     if [[ ! -e "$rootfs_base" ]]; then
-        echo "Creating debian bullseye rootfs..."
+        echo "Creating debian bookworm rootfs..."
         debootstrap \
             --arch=amd64 \
             --variant=minbase \
@@ -34,15 +34,13 @@ function debootstrap_rootfs {
             http://deb.debian.org/debian/    
     fi
     
-    echo "Installing overlay-init and post-init in the rootfs..."
+    echo "Installing overlay-init-systemd and fwagent in the rootfs..."
     mkdir -p "$rootfs_base/overlay" "$rootfs_base/mnt" "$rootfs_base/rom"
-    cp overlay-init "$rootfs_base/sbin/overlay-init"
+    cp overlay-init-systemd "$rootfs_base/sbin/overlay-init-systemd"
 
-    cp post-init.service "$rootfs_base/etc/systemd/system/post-init.service"
-    ln -sf "$rootfs_base/etc/systemd/system/post-init.service" "$rootfs_base/etc/systemd/system/multi-user.target.wants/post-init.service"
-    cp post-init "$rootfs_base/usr/bin/post-init"
-
-    # ln -sf "$rootfs_base/lib/systemd/systemd" "$rootfs_base/sbin/init"
+    cp fwagent.service "$rootfs_base/etc/systemd/system/fwagent.service"
+    ln -sf "$rootfs_base/etc/systemd/system/fwagent.service" "$rootfs_base/etc/systemd/system/multi-user.target.wants/fwagent.service"
+    cp fwagent "$rootfs_base/usr/bin/fwagent"
 
     echo "Installing vm tools in the rootfs..."
     install_vm_tools

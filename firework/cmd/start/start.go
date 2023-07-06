@@ -103,8 +103,20 @@ func runStart(isDaemon bool) error {
 
 	if err := mg.Wait(ctx); err != nil {
 		cancel() // Stop signal handlers
+		dump, err := io.ReadAll(vmmLogFile)
+		if err != nil {
+			return fmt.Errorf("failed to read VMM log fifo: %w", err)
+		}
+		slog.Error("VMM log:", "log", string(dump))
 		return fmt.Errorf("an error occurred while waiting for the machine group to exit: %w", err)
 	}
+
+	dump, err := io.ReadAll(vmmLogFile)
+		if err != nil {
+			return fmt.Errorf("failed to read VMM log fifo: %w", err)
+		}
+
+	slog.Error("VMM log:", "log", string(dump))
 
 	slog.Info("Graceful shutdown successful.")
 	return nil
@@ -205,5 +217,5 @@ func createStdioWriter(vmId string) (*os.File, error) {
 }
 
 func cleanup() {
-	_ = os.Remove(config.VmmLogPath)
+	// _ = os.Remove(config.VmmLogPath)
 }

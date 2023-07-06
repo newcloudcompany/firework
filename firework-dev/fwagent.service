@@ -1,0 +1,10 @@
+[Unit]
+Description=Firework agent service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/fwagent
+PassEnvironment=TERM PATH
+
+[Install]
+WantedBy=multi-user.target
