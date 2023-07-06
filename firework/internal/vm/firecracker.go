@@ -30,6 +30,8 @@ func createFirecrackerVM(ctx context.Context, cfg firecracker.Config, stdio io.W
 		WithBin(binPath).
 		WithStdout(stdio).
 		WithStderr(stdio).
+		// WithStdout(os.Stdout).
+		// WithStderr(os.Stderr).
 		Build(ctx)
 
 	// Copy parent environment variables to the child process.

@@ -80,15 +80,15 @@ func runStart(isDaemon bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	vmmLogFifo, err := createVmmLogFifo(config.VmmLogPath)
+	vmmLogFile, err := createVmmLogFile(config.VmmLogPath)
 	if err != nil {
 		return fmt.Errorf("failed to create VMM log fifo: %w", err)
 	}
 
-	defer vmmLogFifo.Close()
+	defer vmmLogFile.Close()
 	slog.Debug("Created VMM log fifo", "path", config.VmmLogPath)
 
-	mg, err := createMachineGroup(ctx, conf.Nodes, bridge, ipamDb, vmmLogFifo)
+	mg, err := createMachineGroup(ctx, conf.Nodes, bridge, ipamDb, vmmLogFile)
 	if err != nil {
 		return fmt.Errorf("failed to create machine group: %w", err)
 	}
@@ -186,15 +186,8 @@ func generateCid() uint32 {
 	return uint32(randomCid)
 }
 
-func createVmmLogFifo(vmmLogPath string) (*os.File, error) {
-	if _, err := os.Stat(vmmLogPath); os.IsNotExist(err) {
-		if err := syscall.Mkfifo(vmmLogPath, 0666); err != nil {
-			return nil, err
-		}
-	}
-
-	// Needs to be open for reading and writing.
-	f, err := os.OpenFile(config.VmmLogPath, os.O_RDWR, 0600)
+func createVmmLogFile(vmmLogPath string) (*os.File, error) {
+	f, err := os.Create(vmmLogPath)
 	if err != nil {
 		return nil, err
 	}

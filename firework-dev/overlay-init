@@ -56,4 +56,4 @@ do_overlay
 
 # Invoke the actual system init program and procede with the boot
 # process.
-exec chroot . /sbin/init $@
+exec chroot . /lib/systemd/systemd $@

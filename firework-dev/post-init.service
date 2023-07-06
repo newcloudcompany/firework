@@ -1,0 +1,10 @@
+[Unit]
+Description=Post-init service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/post-init
+PassEnvironment=TERM PATH
+
+[Install]
+WantedBy=multi-user.target
