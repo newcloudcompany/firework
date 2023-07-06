@@ -7,7 +7,7 @@ cd $script_dir
 
 rootfs_base="debian-bookworm-rootfs-systemd"
 squashfs_img="rootfs.squashfs"
-packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git systemd systemd-sysv"
+packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git systemd systemd-sysv udev"
 
 # mkdir -p "$rootfs_base"
 
