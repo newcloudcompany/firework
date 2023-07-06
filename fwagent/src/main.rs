@@ -13,6 +13,7 @@ use std::sync::mpsc;
 
 use nom::bytes::complete::tag;
 use nom::sequence::{preceded, terminated, tuple};
+use nom::character::complete::u16;
 
 use ptyca::{openpty, PtyCommandExt};
 
@@ -30,8 +31,7 @@ struct Metadata {
 }
 
 pub fn log_init() {
-    // default to "info" level, just for this bin
-    let level = env::var("LOG_FILTER").unwrap_or_else(|_| "init=info".into());
+    let level = env::var("LOG_FILTER").unwrap_or_else(|_| "init=debug".into());
 
     env_logger::builder()
         .parse_filters(&level)
@@ -47,14 +47,11 @@ fn main() -> Result<(), anyhow::Error> {
     // First it must call the token endpoint (/latest/api/token) with PUT method and X-metadata-token-ttl-seconds header to issue a session token.
     // Then the token is used in the X-metadata-token header to make a call to latest/meta-data endpoint.
     // MMDS IPv4 address: 169.254.169.254
-
     let addr = "169.254.169.254";
 
     // Add route to MMDS.
     let mut cmd = Command::new("ip");
-    let output = cmd.args(["route", "add", addr, "dev", "eth0"]).output()?;
-    println!("{}", String::from_utf8_lossy(&output.stderr));
-    println!("{}", String::from_utf8_lossy(&output.stdout));
+    cmd.args(["route", "add", addr, "dev", "eth0"]).output()?;
 
     let client = reqwest::blocking::Client::new();
     let token = client
@@ -63,7 +60,7 @@ fn main() -> Result<(), anyhow::Error> {
         .send()?
         .text()?;
 
-    info!("token: {}", token);
+    debug!("X-metadata-token: {}", token);
 
     let metadata = client
         .get(&format!("http://{}", addr))
@@ -72,11 +69,6 @@ fn main() -> Result<(), anyhow::Error> {
         .send()?
         .json::<Metadata>()?;
 
-    // Enable packet forwarding.
-    fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
-
-    sethostname(metadata.hostname.as_bytes())?;
-
     let hosts_string = metadata
         .hosts
         .iter()
@@ -84,6 +76,8 @@ fn main() -> Result<(), anyhow::Error> {
         .collect::<Vec<String>>()
         .join("\n");
 
+    // Enable packet forwarding and set /etc/hosts.
+    fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
     fs::write("/etc/hosts", hosts_string)?;
 
     // Set standard PATH env variable.
@@ -92,6 +86,8 @@ fn main() -> Result<(), anyhow::Error> {
         "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     );
 
+    sethostname(metadata.hostname.as_bytes())?;
+    
     let listener =
         VsockListener::bind_with_cid_port(metadata.cid, 10000)?;
 
@@ -103,8 +99,6 @@ fn main() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
-
-use nom::character::complete::u16;
 
 fn try_parse_resize_msg(input: &[u8]) -> nom::IResult<&[u8], (u16, u16)> {
     preceded(
