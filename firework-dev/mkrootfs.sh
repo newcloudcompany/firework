@@ -7,7 +7,7 @@ cd $script_dir
 
 rootfs_base="debian-bookworm-rootfs"
 squashfs_img="rootfs.squashfs"
-packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git"
+packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git gnupg"
 
 # mkdir -p "$rootfs_base"
 
@@ -46,6 +46,7 @@ function debootstrap_rootfs {
 
     echo "Performing additional configuration..."
     chroot "$rootfs_base" /bin/bash -c "update-alternatives --set iptables /usr/sbin/iptables-legacy"
+    chroot "$rootfs_base" /bin/bash -c "update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy"
 }
 
 function mkroot_squashfs {

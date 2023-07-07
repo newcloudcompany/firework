@@ -40,3 +40,12 @@ TODO: Use SDK-provided vsock client
 ```
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 ```
+
+## k8s memos
+* Make sure SystemdCgroup in runtimes.runc.options is set to true
+* Set snapshotter in  plugins."io.containerd.grpc.v1.cri".containerd to "native", because default is overlayfs and nested overlayfs does not work
+* When running nerdctl make sure the --snapshotter is explicitly set to native
+
+## TODO:
+
+* Remove udev from pre-installed pkgs

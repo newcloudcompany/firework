@@ -7,7 +7,7 @@ cd $script_dir
 
 rootfs_base="debian-bookworm-rootfs-systemd"
 squashfs_img="rootfs.squashfs"
-packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git systemd systemd-sysv udev"
+packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git systemd systemd-sysv udev gnupg"
 
 # mkdir -p "$rootfs_base"
 
@@ -42,11 +42,14 @@ function debootstrap_rootfs {
     ln -sf "$rootfs_base/etc/systemd/system/fwagent.service" "$rootfs_base/etc/systemd/system/multi-user.target.wants/fwagent.service"
     cp fwagent "$rootfs_base/usr/bin/fwagent"
 
+    rm -rf "$rootfs_base/etc/systemd/system/getty.target.wants/"
+
     echo "Installing vm tools in the rootfs..."
     install_vm_tools
 
     echo "Performing additional configuration..."
     chroot "$rootfs_base" /bin/bash -c "update-alternatives --set iptables /usr/sbin/iptables-legacy"
+    chroot "$rootfs_base" /bin/bash -c "update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy"
 }
 
 function mkroot_squashfs {
