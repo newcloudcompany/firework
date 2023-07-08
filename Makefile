@@ -9,7 +9,7 @@ ROOTFS_ARCHIVE_URL="https://pub-1a5aeef625fc45b4a4bef89ee141047f.r2.dev/debian-b
 all: $(SQUASHFS_FILES)
 
 rootfs-%.squashfs: artifacts/firework-agent
-	mkdir -p /tmp/systemd-rootfs-$*-squashfs
+	sudo mkdir -p /tmp/systemd-rootfs-$*-squashfs
 	sudo buildctl build --frontend=dockerfile.v0 \
         --local context=. \
         --local dockerfile=. \
@@ -18,13 +18,13 @@ rootfs-%.squashfs: artifacts/firework-agent
 
 	sudo mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
 
-	rm -f /tmp/systemd-rootfs-$*-squashfs.tar
-	rm -rf /tmp/systemd-rootfs-$*-squashfs
+	sudo rm -f /tmp/systemd-rootfs-$*-squashfs.tar
+	sudo rm -rf /tmp/systemd-rootfs-$*-squashfs
 
 cleanup:
-	rm -f /tmp/systemd-rootfs-*-squashfs.tar
-	rm -rf /tmp/systemd-rootfs-*-squashfs
-	rm -f rootfs-*.squashfs
+	sudo rm -f /tmp/systemd-rootfs-*-squashfs.tar
+	sudo rm -rf /tmp/systemd-rootfs-*-squashfs
+	sudo rm -f rootfs-*.squashfs
 
 install: firework-rootfs-dir
 	sudo cp rootfs-*.squashfs /var/lib/firework/rootfs

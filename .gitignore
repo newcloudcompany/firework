@@ -10,3 +10,4 @@ rootfs.tar
 *.squashfs
 fwagent
 artifacts
+firework-agent
