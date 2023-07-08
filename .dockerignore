@@ -1,0 +1,9 @@
+*.squashfs
+systemd-*
+kernel
+
+firework
+debian-bookworm*
+init
+ptyca
+vsock-client

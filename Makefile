@@ -5,25 +5,18 @@ VARIANTS = minimal k8s tools
 SQUASHFS_FILES = $(patsubst %,rootfs-%.squashfs,$(VARIANTS))
 
 ROOTFS_ARCHIVE_URL="https://pub-1a5aeef625fc45b4a4bef89ee141047f.r2.dev/debian-bookworm-systemd-rootfs.tar.gz"
-ROOTFS_ARCHIVE_PATH="debian-bookworm-systemd-rootfs.tar.gz"
 
 all: $(SQUASHFS_FILES)
 
-# Download debian-bookworm-systemd-rootfs.tar.gz if not exists
-debian-bookworm-systemd-rootfs.tar.gz:
-	curl -o $@ -L $(ROOTFS_ARCHIVE_URL)
-
-# Define rules for squashfs files
-rootfs-%.squashfs:
+rootfs-%.squashfs: artifacts/firework-agent
 	mkdir -p /tmp/systemd-rootfs-$*-squashfs
-
-	buildctl build --frontend=dockerfile.v0 \
+	sudo buildctl build --frontend=dockerfile.v0 \
         --local context=. \
         --local dockerfile=. \
 		--output type=tar \
-        --opt "filename=Dockerfile.$*" | tar -C /tmp/systemd-rootfs-$*-squashfs -xf -
+        --opt "filename=firework-dev/Dockerfile.$*" | sudo tar -C /tmp/systemd-rootfs-$*-squashfs -xf -
 
-	mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
+	sudo mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
 
 	rm -f /tmp/systemd-rootfs-$*-squashfs.tar
 	rm -rf /tmp/systemd-rootfs-$*-squashfs
@@ -33,5 +26,18 @@ cleanup:
 	rm -rf /tmp/systemd-rootfs-*-squashfs
 	rm -f rootfs-*.squashfs
 
-.PHONY: all cleanup
+install: firework-rootfs-dir
+	sudo cp rootfs-*.squashfs /var/lib/firework/rootfs
+
+firework-rootfs-dir:
+	sudo mkdir -p /var/lib/firework/rootfs
+
+artifacts/firework-agent: artifacts
+	cargo build -p fwagent --release
+	cp target/release/fwagent artifacts/firework-agent
+
+artifacts:
+	mkdir -p artifacts
+
+.PHONY: all cleanup install firework-rootfs-dir
 

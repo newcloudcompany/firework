@@ -22,19 +22,19 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY k8s/install_kubeadm_prerequisites.sh .
+COPY firework-dev/k8s/install_kubeadm_prerequisites.sh .
 RUN /install_kubeadm_prerequisites.sh
 
-COPY k8s/config.toml /etc/containerd/config.toml
-COPY k8s/containerd.service /etc/systemd/system/containerd.service
-COPY fwagent.service fwagent .
+COPY firework-dev/k8s/config.toml /etc/containerd/config.toml
+COPY firework-dev/k8s/containerd.service /etc/systemd/system/containerd.service
+COPY firework-dev/fwagent.service artifacts/firework-agent .
 
 RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
     update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
 
 RUN mkdir -p /overlay /mnt /rom
 
-COPY overlay-init-systemd /sbin/overlay-init-systemd
+COPY firework-dev/overlay-init-systemd /sbin/overlay-init-systemd
 
 RUN cp fwagent.service /etc/systemd/system/fwagent.service && \
     ln -sf /etc/systemd/system/fwagent.service /etc/systemd/system/multi-user.target.wants/fwagent.service && \

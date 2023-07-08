@@ -1,8 +1,0 @@
-downloads
-debian-bookworm-rootfs
-debian-bookworm-rootfs-systemd
-rootfs.ext4
-rootfs.ext4.gz
-rootfs.tar
-*.tar.gz
-*.squashfs
