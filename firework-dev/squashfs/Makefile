@@ -15,16 +15,18 @@ debian-bookworm-systemd-rootfs.tar.gz:
 
 # Define rules for squashfs files
 rootfs-%.squashfs:
+	mkdir -p /tmp/systemd-rootfs-$*-squashfs
+
 	buildctl build --frontend=dockerfile.v0 \
         --local context=$* \
         --local dockerfile=. \
-		--output "type=tar,dest=/tmp/systemd-rootfs-$*-squashfs.tar" \
-        --opt "filename=$*/Dockerfile.$*"
-		mkdir -p /tmp/systemd-rootfs-$*-squashfs
-		tar -xf /tmp/systemd-rootfs-$*-squashfs.tar -C /tmp/systemd-rootfs-$*-squashfs
-		mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
-		rm -f /tmp/systemd-rootfs-$*-squashfs.tar
-		rm -rf /tmp/systemd-rootfs-$*-squashfs
+		--output type=tar \
+        --opt "filename=$*/Dockerfile.$*" | tar -C /tmp/systemd-rootfs-$*-squashfs -xf -
+
+	mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
+	
+	rm -f /tmp/systemd-rootfs-$*-squashfs.tar
+	rm -rf /tmp/systemd-rootfs-$*-squashfs
 
 cleanup:
 	rm -f /tmp/systemd-rootfs-*-squashfs.tar
