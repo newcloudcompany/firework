@@ -17,6 +17,8 @@ FROM scratch
 
 COPY --from=rootfs /rootfs /
 
+ARG FC_RELEASE=firecracker-v1.3.3-x86_64
+
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt update && \
     apt install -y --no-install-recommends \
@@ -25,3 +27,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         gnupg && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN curl -o /tmp/$FC_RELEASE.tgz -L https://github.com/firecracker-microvm/firecracker/releases/download/v1.3.3/$FC_RELEASE.tgz && \
+    tar -xvf /tmp/$FC_RELEASE.tgz -C /tmp && \
+    cp /tmp/release-v1.3.3-x86_64/$FC_RELEASE /usr/bin/firecracker
