@@ -38,4 +38,4 @@ COPY firework-dev/overlay-init-systemd /sbin/overlay-init-systemd
 
 RUN cp fwagent.service /etc/systemd/system/fwagent.service && \
     ln -sf /etc/systemd/system/fwagent.service /etc/systemd/system/multi-user.target.wants/fwagent.service && \
-    cp fwagent /usr/bin/fwagent
+    cp firework-agent /usr/bin/fwagent
