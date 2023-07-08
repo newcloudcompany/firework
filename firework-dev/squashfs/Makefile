@@ -18,13 +18,13 @@ rootfs-%.squashfs:
 	mkdir -p /tmp/systemd-rootfs-$*-squashfs
 
 	buildctl build --frontend=dockerfile.v0 \
-        --local context=$* \
+        --local context=. \
         --local dockerfile=. \
 		--output type=tar \
-        --opt "filename=$*/Dockerfile.$*" | tar -C /tmp/systemd-rootfs-$*-squashfs -xf -
+        --opt "filename=Dockerfile.$*" | tar -C /tmp/systemd-rootfs-$*-squashfs -xf -
 
 	mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
-	
+
 	rm -f /tmp/systemd-rootfs-$*-squashfs.tar
 	rm -rf /tmp/systemd-rootfs-$*-squashfs
 

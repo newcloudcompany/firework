@@ -1,0 +1,41 @@
+FROM debian:12-slim as rootfs
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt update && \
+    apt install -y --no-install-recommends \
+        ca-certificates \
+        curl
+
+RUN curl -o /tmp/rootfs.tar.gz -L https://pub-1a5aeef625fc45b4a4bef89ee141047f.r2.dev/debian-bookworm-systemd-rootfs.tar.gz
+RUN mkdir -p /rootfs && tar -C /rootfs -xzf /tmp/rootfs.tar.gz
+
+FROM scratch
+
+COPY --from=rootfs /rootfs /
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt update && \
+    apt install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+COPY k8s/install_kubeadm_prerequisites.sh .
+RUN /install_kubeadm_prerequisites.sh
+
+COPY k8s/config.toml /etc/containerd/config.toml
+COPY k8s/containerd.service /etc/systemd/system/containerd.service
+COPY fwagent.service fwagent .
+
+RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
+    update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+
+RUN mkdir -p /overlay /mnt /rom
+
+COPY overlay-init-systemd /sbin/overlay-init-systemd
+
+RUN cp fwagent.service /etc/systemd/system/fwagent.service && \
+    ln -sf /etc/systemd/system/fwagent.service /etc/systemd/system/multi-user.target.wants/fwagent.service && \
+    cp fwagent /usr/bin/fwagent

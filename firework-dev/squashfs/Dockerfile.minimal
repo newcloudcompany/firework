@@ -11,17 +11,9 @@ RUN mkdir -p /rootfs && tar -C /rootfs -xzf /tmp/rootfs.tar.gz
 
 FROM scratch
 
-# ARG ROOTFS_ARCHIVE_PATH
-
-# ADD $ROOTFS_ARCHIVE_PATH /
-
 COPY --from=rootfs /rootfs /
 
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    apt update && \
-    apt install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        gnupg && \
-    apt clean && \
+RUN apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN mkdir -p /overlay /mnt /rom
