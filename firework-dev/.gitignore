@@ -4,3 +4,5 @@ debian-bookworm-rootfs-systemd
 rootfs.ext4
 rootfs.ext4.gz
 rootfs.squashfs
+rootfs.tar
+*.tar.gz

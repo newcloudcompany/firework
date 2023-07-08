@@ -8,8 +8,6 @@ cd $script_dir
 function install_containerd {
     curl -OL https://github.com/containerd/containerd/releases/download/v1.7.2/containerd-1.7.2-linux-amd64.tar.gz
     tar Cxzvf /usr/local containerd-1.7.2-linux-amd64.tar.gz
-    # systemctl daemon-reload
-    # systemctl enable containerd
     ln -sf "/etc/systemd/system/containerd.service" "/etc/systemd/system/multi-user.target.wants/containerd.service"
 }
 
