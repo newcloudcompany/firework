@@ -6,16 +6,6 @@
             "name": "ctrl",
             "vcpu": 2,
             "memory": 4096
-        },
-        {
-            "name": "worker1",
-            "vcpu": 2,
-            "memory": 4096
-        },
-        {
-            "name": "worker2",
-            "vcpu": 2,
-            "memory": 4096
         }
     ]
 }
