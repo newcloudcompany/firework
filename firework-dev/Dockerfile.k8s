@@ -18,6 +18,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt install -y --no-install-recommends \
         ca-certificates \
         curl \
+        ipset \
         gnupg && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

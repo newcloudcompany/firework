@@ -7,9 +7,10 @@ import (
 )
 
 type Node struct {
-	Name   string `json:"name"`
-	Vcpu   int64  `json:"vcpu"`
-	Memory int64  `json:"memory"`
+	Name       string `json:"name"`
+	Vcpu       int64  `json:"vcpu"`
+	Memory     int64  `json:"memory"`
+	RootFsPath string `json:"rootfs_path"`
 }
 
 type Config struct {

@@ -112,7 +112,7 @@ func runStart(isDaemon bool) error {
 
 func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *network.BridgeNetwork, ipamDb *ipam.IPAM, fifoLogWriter io.Writer) (*vm.MachineGroup, error) {
 	kernelPath := config.KernelPath()
-	rootFsPath := config.RootFsPath()
+	// rootFsPath := config.RootFsPath()
 
 	mg := vm.NewMachineGroup()
 
@@ -154,7 +154,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 
 		machine, err := vm.CreateMachine(ctx, vm.MachineOptions{
 			Id:                    id,
-			RootFsPath:            rootFsPath,
+			RootFsPath:            node.RootFsPath,
 			KernelImagePath:       kernelPath,
 			SocketPath:            socketPath,
 			InstanceLogFifoPath:   logFifoPath,

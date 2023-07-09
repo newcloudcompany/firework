@@ -49,3 +49,10 @@ update-alternatives --set iptables /usr/sbin/iptables-legacy
 ## TODO:
 
 * Remove udev from pre-installed pkgs
+
+## Cmd
+
+```
+# Ignore kernel module check
+kubeadm init --ignore-preflight-errors 
+```
