@@ -7,6 +7,12 @@
             "vcpu": 2,
             "memory": 4096,
             "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs"
+        },
+        {
+            "name": "worker-1",
+            "vcpu": 2,
+            "memory": 4096,
+            "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs"
         }
     ]
 }

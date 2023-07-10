@@ -20,3 +20,15 @@ aws s3api list-buckets --endpoint-url https://7d9bec7ddc058a107bbd85fd4f8cc6d6.r
 ```
 aws s3api put-object --endpoint-url https://7d9bec7ddc058a107bbd85fd4f8cc6d6.r2.cloudflarestorage.com --bucket firework --key debian-bookworm-systemd-rootfs.tar.gz --body docker/debian-bookworm-rootfs.tar.gz
 ```
+
+## k8s specific kernel config
+
+Cilium, and likely Weave-Net
+
+```
+CONFIG_NETFILTER_XT_SET=m
+CONFIG_IP_SET=m
+CONFIG_IP_SET_HASH_IP=m
+```
+
+Probably `y` should work too.
