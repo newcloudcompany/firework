@@ -61,3 +61,9 @@ kubeadm init --ignore-preflight-errors SystemVerification
 kubeadm join --ignore-preflight-errors SystemVerification 10.0.0.242:6443 --token kjordx.wajkd8rn2cb5zgs4 \
         --discovery-token-ca-cert-hash sha256:840e4779c5c215d1e78b05883634386104649ceb12dd36483a5b46f1126b94c4
 ```
+
+```
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+```

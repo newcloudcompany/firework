@@ -6,13 +6,15 @@
             "name": "ctrl",
             "vcpu": 2,
             "memory": 4096,
-            "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs"
+            "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs",
+            "disk": "32G"
         },
         {
             "name": "worker-1",
             "vcpu": 2,
             "memory": 4096,
-            "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs"
+            "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs",
+            "disk": "8G"
         }
     ]
 }

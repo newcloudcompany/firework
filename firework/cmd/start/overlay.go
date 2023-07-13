@@ -6,11 +6,11 @@ import (
 	"github.com/jlkiri/firework/internal/config"
 )
 
-func createOverlayDrive(vmId string) (string, error) {
+func createOverlayDrive(vmId string, capacity string) (string, error) {
 	path := config.OverlayDrivePath(vmId)
 
 	// Create 2GB sparse file and format it as ext4
-	_, err := exec.Command("truncate", "-s", "16G", path).CombinedOutput()
+	_, err := exec.Command("truncate", "-s", capacity, path).CombinedOutput()
 	if err != nil {
 		return "", err
 	}

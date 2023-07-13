@@ -142,7 +142,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			return nil, err
 		}
 
-		overlayDrivePath, err := createOverlayDrive(id)
+		overlayDrivePath, err := createOverlayDrive(id, node.Disk)
 		if err != nil {
 			return nil, err
 		}
