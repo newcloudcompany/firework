@@ -1,11 +1,11 @@
 {
-    "subnet_cidr": "10.0.0.240/28",
-    "gateway": "10.0.0.241/28",
+    "subnet_cidr": "172.18.0.240/28",
+    "gateway": "172.18.0.241/28",
     "nodes": [
         {
             "name": "ctrl",
             "vcpu": 2,
-            "memory": 4096,
+            "memory": 8192,
             "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs",
             "disk": "32G"
         },
@@ -14,7 +14,7 @@
             "vcpu": 2,
             "memory": 4096,
             "rootfs_path": "/var/lib/firework/rootfs/rootfs-k8s.squashfs",
-            "disk": "8G"
+            "disk": "32G"
         }
     ]
 }
