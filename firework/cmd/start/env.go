@@ -40,10 +40,10 @@ func prepareEnvironment() error {
 		return err
 	}
 
-	err = ensureSquashFs(ctx, config.SquashFsUrl, config.RootFsPath())
-	if err != nil {
-		return err
-	}
+	// err = ensureSquashFs(ctx, config.SquashFsUrl, config.RootFsPath())
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
