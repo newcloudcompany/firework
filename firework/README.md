@@ -85,6 +85,8 @@ Prints a table of VMs with their unique IDs, IPv4 address and status which can b
 
 Prints aggregated logs of a Virtual Machine Monitor of each VM. These are messages about VM's status, some other metadata.
 
+TODO: In a client CLI implementation just use `isatty` and poll the endpoint for logs to keep the worker agent stateless.
+
 ### firework logs \<VMID\>
 
 Prints logs of an individual VM with VMID (which can be looked up with `firework status`).
