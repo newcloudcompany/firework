@@ -2,17 +2,6 @@
 
 Firework is a tool for launching networked clusters of Firecracker microVMs locally.
 
-## Development requirements
-
-1. Linux Kernel version 5 or higher
-2. [Firecracker](https://github.com/firecracker-microvm/firecracker) v1.3.3 or higher installed at `/bin/firecracker`.
-3. CPU that supports virtualization. To check (on Debian-based OS):
-
-```
-$ apt install -y cpu-checker
-$ kvm-ok
-```
-
 ## Usage
 
 ```
@@ -68,64 +57,54 @@ Use to launch a cluster of Firecracker microVMs. The configuration is read from 
 Every time a cluster is created with `start`:
 - a TAP network interface is created for each VM
 - a free IP address is allocated to each VM from the database
-- appropriate `iptables` rules are inserted to enable traffic between the VMs and from the VMs to the Internet
-- a sparse file with capacity in `disk` is created to be attached as non-root block device for each VM
+- appropriate `iptables` rules are inserted to enable traffic between the VMs and from the VMs to the Internet and back
+- a sparse file with capacity in `disk` is created with `truncate` to be attached as non-root block device for each VM
 
-Every VM node configuration must include a number of `vcpu`s, memory in megabytes, `disk` capacity and an absolute path to `squashfs` image of rootfs. The image must have an init system installed. init can be anything but `systemd` is a good choice. For quick start, here is an image with `systemd` as init as kubeadm pre-installed: https://pub-1a5aeef625fc45b4a4bef89ee141047f.r2.dev/rootfs-k8s.squashfs
+Every VM node configuration must include a number of `vcpu`s, memory in megabytes, `disk` capacity in units acceptable by `truncate` and an absolute path to `squashfs` image of rootfs. The image must have an init system installed. init can be anything but `systemd` is a good choice. For quick start, here is an image with `systemd` as init as kubeadm pre-installed: https://pub-1a5aeef625fc45b4a4bef89ee141047f.r2.dev/rootfs-k8s.squashfs
 
 ### firework stop
 
-Undoes what `firework start` does. Cleans up created resources, and network configuration (`iptables`).
+Gracefully stops all VMs in the cluster and undoes what `firework start` does. Cleans up created resources, and network configuration (`iptables`).
 
 ### firework status
 
-Prints a table of VMs with their unique IDs, IPv4 address and status which can be `Running` or `Not Running`.
+Prints a table of VM statuses. Each entry has a unique VMID, IP address and status which can be `Running` or `Not Running`.
 
 ### firework logs
 
-Prints aggregated logs of a Virtual Machine Monitor of each VM. These are messages about VM's status, some other metadata.
+Prints aggregated logs of a Virtual Machine Monitor (VMM) of each VM. These are messages about VM's status, some other metadata.
 
 TODO: In a client CLI implementation just use `isatty` and poll the endpoint for logs to keep the worker agent stateless.
 
 ### firework logs \<VMID\>
 
-Prints logs of an individual VM with VMID (which can be looked up with `firework status`).
+Prints logs of an individual VM with VMID (which can be looked up with `firework status`). This is where the `stdout` and `stderr` of the init goes.
 
 ### firework connect
 
-Creates a session with remote shell using VSOCK connection to an `firework` agent running inside a VM. This requires `firework` agent to be pre-installed in the `squashfs` rootfs.
+Allocates a TTY and creates a session with remote shell through VSOCK connection to an `firework` agent running inside a VM. This requires `firework` agent to be pre-installed in the `squashfs` rootfs image.
 
+## Development requirements
 
+### Common
+1. Linux Kernel version 5 or higher.
+2. `sudo` privileges.
 
-
-## Misc
-
-### Build base Debian rootfs
-```
-debootstrap --arch=amd64 --variant=minbase bullseye ./debian-bullseye http://deb.debian.org/debian/
-```
-
-
-## k8s memos
-* Make sure SystemdCgroup in runtimes.runc.options is set to true
-* Set snapshotter in  plugins."io.containerd.grpc.v1.cri".containerd to "native", because default is overlayfs and nested overlayfs does not work
-* When running nerdctl make sure the --snapshotter is explicitly set to native
-
-
-## Cmd
+### Building and running the binary
+1. [Firecracker](https://github.com/firecracker-microvm/firecracker) v1.3.3 or higher installed at `/bin/firecracker`.
+2. CPU that supports virtualization. To check (on Debian-based OS):
 
 ```
-# Ignore kernel module check
-kubeadm init --ignore-preflight-errors SystemVerification
+$ apt install -y cpu-checker
+$ kvm-ok
 ```
 
-```
-kubeadm join --ignore-preflight-errors SystemVerification 10.0.0.242:6443 --token kjordx.wajkd8rn2cb5zgs4 \
-        --discovery-token-ca-cert-hash sha256:840e4779c5c215d1e78b05883634386104649ceb12dd36483a5b46f1126b94c4
-```
+3. `gcc` available (probably better install `build-essential` package) in `$PATH`. This is used for `CGO_ENABLED` build because the `firework` binary depends on `sqlite`.
+4. `go` binary available in `$PATH` (TODO (jlkiri): containerize builds).
+5. `16GB` of RAM would be good for running a multi-VM cluster.
 
-```
-mkdir -p $HOME/.kube
-cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-chown $(id -u):$(id -g) $HOME/.kube/config
-```
+### Building the base rootfs and customized squashfs images
+1. `containerd` installed and daemon running.
+2. [`buildctl`](https://github.com/moby/buildkit) installed and `buildkitd` daemon running.
+3. Rust toolchain installed (`rustc`, `cargo`). This is to build the `firework` agent and the packages it depends on (`ptyca`).
+4. `mksquashfs` available in `$PATH`.
