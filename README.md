@@ -69,5 +69,5 @@ TODO (jlkiri): currently this points to `jlkiri`'s individual Cloudflare account
 
 ### Image specific kernel config
 
-Some squashfs images that we build like the ones the come with `kubeadm` pre-installed require more parameters to be set than in the recommended official config (TODO (jlkiri): distribute kernels in pairs with the squashfs images that require it?). For example, every tool in the k8s has its own requirements and while the tool specific requirements are lost in the history of experiments, here's the diff between the end result for `kubeadm` & `cilium` and the minimal officially recommended config:
+Some squashfs images that we build like the ones the come with `kubeadm` pre-installed require more parameters to be set than in the recommended official config (TODO (jlkiri): distribute kernels in pairs with the squashfs images that require it?). For example, every tool in the k8s has its own requirements and while the tool specific requirements are lost in the history of experiments, here's the diff between the end result for `kubeadm` & `cilium` and the minimal officially recommended config: [`config.diff`](config.diff)
 
