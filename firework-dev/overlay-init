@@ -16,6 +16,9 @@
 # 1. rw_root -- path where the read/write root is mounted
 # 2. work_dir -- path to the overlay workdir (must be on same filesystem as rw_root)
 # Overlay will be set up on /mnt, original root on /mnt/rom
+
+set -eu
+
 pivot() {
     local rw_root work_dir
     rw_root="$1"
@@ -23,7 +26,7 @@ pivot() {
     /bin/mount \
 	-o noatime,lowerdir=/,upperdir=${rw_root},workdir=${work_dir} \
 	-t overlay "overlayfs:${rw_root}" /mnt
-    pivot_root /mnt /mnt/rom
+    pivot_root /mnt /mnt/rom || exit 1
     echo "Pivoted root"
 }
 
@@ -51,9 +54,85 @@ fi
 
 do_overlay
 
+chdir /
+
+chmod_0755="u=rwx,g=rx,o=rx"
+chmod_0555="u=r-x,g=rx,o=rx"
+chmod_1777="u=rwx,g=rwx,o=rwx"
+common_mnt_flags="nodev,noexec,nosuid"
+common_cgroup_mnt_flags="nodev,noexec,nosuid,relatime"
+
 # Move mount point of devtmpfs so we don't have to remount it
 /bin/mount --move /rom/dev /dev
 
+touch /etc/hosts
+
+handle_error() {
+    echo "Error: $1"
+    exit 1
+}
+
+# Mount /dev/pts
+echo "Mounting /dev/pts"
+mkdir -p -m $chmod_0755 /dev/pts || handle_error "Failed to create /dev/pts directory"
+mount -t devpts -o "newinstance,gid=5,mode=620,ptmxmode=666" devpts /dev/pts || handle_error "Failed to mount /dev/pts"
+
+# Mount /dev/mqueue
+echo "Mounting /dev/mqueue"
+mkdir -p -m $chmod_0755 /dev/mqueue || handle_error "Failed to create /dev/mqueue directory"
+mount -t mqueue -o $common_mnt_flags mqueue /dev/mqueue || handle_error "Failed to mount /dev/mqueue"
+
+# Mount /dev/shm
+echo "Mounting /dev/shm"
+mkdir -p -m $chmod_1777 /dev/shm || handle_error "Failed to create /dev/shm directory"
+mount -t tmpfs -o "nosuid,nodev" tmpfs /dev/shm || handle_error "Failed to mount /dev/shm"
+
+# Mount /dev/hugepages
+echo "Mounting /dev/hugepages"
+mkdir -p -m $chmod_0755 /dev/hugepages || handle_error "Failed to create /dev/hugepages directory"
+mount -t hugetlbfs -o "relatime,pagesize=2M" hugetlbfs /dev/hugepages || handle_error "Failed to mount /dev/hugepages"
+
+# Mount /proc
+echo "Mounting /proc"
+mkdir -p -m $chmod_0555 /proc || handle_error "Failed to create /proc directory"
+mount -t proc -o $common_mnt_flags proc /proc || handle_error "Failed to mount /proc"
+mount -t binfmt_misc -o $common_mnt_flags,relatime binfmt_misc /proc/sys/fs/binfmt_misc || handle_error "Failed to mount /proc/sys/fs/binfmt_misc"
+
+# Mount /sys
+echo "Mounting /sys"
+mkdir -p -m $chmod_0555 /sys || handle_error "Failed to create /sys directory"
+mount -t sysfs -o $common_mnt_flags sysfs /sys || handle_error "Failed to mount /sys"
+
+# Mount /run
+echo "Mounting /run"
+mkdir -p -m $chmod_0755 /run || handle_error "Failed to create /run directory"
+mount -t tmpfs -o "nosuid,nodev" tmpfs /run || handle_error "Failed to mount /run"
+mkdir -p -m $chmod_0755 /run/lock || handle_error "Failed to create /run/lock directory"
+
+# Create symlinks
+symlink="/proc/self/fd"
+echo "Creating symlinks"
+ln -s $symlink /dev/fd || handle_error "Failed to create symlink /dev/fd"
+ln -s "$symlink/0" /dev/stdin || handle_error "Failed to create symlink /dev/stdin"
+ln -s "$symlink/1" /dev/stdout || handle_error "Failed to create symlink /dev/stdout"
+ln -s "$symlink/2" /dev/stderr || handle_error "Failed to create symlink /dev/stderr"
+
+# Create /root directory
+echo "Creating /root directory"
+mkdir -p -m $chmod_0755 /root || handle_error "Failed to create /root directory"
+
+# Mount cgroup
+echo "Mounting cgroup"
+mount -t tmpfs -o "nosuid,noexec,nodev" tmpfs /sys/fs/cgroup || handle_error "Failed to mount /sys/fs/cgroup"
+
+# Mount cgroup2
+echo "Mounting cgroup2"
+mkdir -p -m $chmod_0555 /sys/fs/cgroup/unified || handle_error "Failed to create /sys/fs/cgroup/unified directory"
+# mount -t cgroup2 -o "$common_mnt_flags,relatime,nsdelegate" cgroup2 /sys/fs/cgroup/unified || handle_error "Failed to mount /sys/fs/cgroup/unified"
+
+# umount -l /rom
+
 # Invoke the actual system init program and procede with the boot
 # process.
-exec chroot . /sbin/init $@
+
+exec /init

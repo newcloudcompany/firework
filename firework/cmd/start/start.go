@@ -147,7 +147,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			return nil, err
 		}
 
-		stdioWriter, err := createStdioWriter(id)
+		_, err = createStdioWriter(id)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			SocketPath:            socketPath,
 			InstanceLogFifoPath:   logFifoPath,
 			InstanceFifoLogWriter: fifoLogWriter,
-			Stdio:                 stdioWriter,
+			Stdio:                 os.Stdout,
 			MetricsFifoPath:       metricsFifoPath,
 			OverlayDrivePath:      overlayDrivePath,
 			VmmLogPath:            config.VmmLogPath,

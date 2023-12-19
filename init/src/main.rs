@@ -1,20 +1,20 @@
 #[macro_use]
 extern crate log;
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::{env, io, process, time};
-use std::process::Command;
 use anyhow::Error;
 use nix::errno::Errno;
 use nix::mount::{mount as nix_mount, MsFlags};
-use nix::sys::signal::{signal, self};
+use nix::sys::signal::{self, signal};
 use nix::sys::{
     stat::Mode,
     wait::{waitpid, WaitPidFlag, WaitStatus},
 };
-use nix::unistd::{mkdir as nix_mkdir, symlinkat, getpid, Pid};
+use nix::unistd::{getpid, mkdir as nix_mkdir, symlinkat, Pid};
 use nix::NixPath;
+use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::{env, io, process, time};
 
 use rustix::fs::MountFlags;
 
@@ -245,7 +245,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     mkdir("/etc", chmod_0755).ok();
 
-    let mut fwagent_cmd = Command::new("/usr/bin/fwagent");
+    let mut fwagent_cmd = Command::new("/usr/bin/firework-agent");
     fwagent_cmd.spawn()?;
 
     info!("Spawned firework agent");

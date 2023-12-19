@@ -1,40 +1,55 @@
-# List of variants
-VARIANTS = minimal k8s tools
+all: rootfs.squashfs
 
-# List of target squashfs images
-SQUASHFS_FILES = $(patsubst %,rootfs-%.squashfs,$(VARIANTS))
+rootfs.squashfs: artifacts/firework-agent
+	sudo mkdir -p /tmp/rootfs-squashfs
+	sudo ./firework-dev/alpine-make-rootfs -p iputils -p iproute2 /tmp/rootfs-squashfs
 
-ROOTFS_ARCHIVE_URL="https://pub-1a5aeef625fc45b4a4bef89ee141047f.r2.dev/debian-bookworm-systemd-rootfs.tar.gz"
+	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/init
+	sudo cp firework-dev/overlay-init /tmp/rootfs-squashfs/sbin/overlay-init
+	
+	sudo mkdir /tmp/rootfs-squashfs/mnt
+	sudo mkdir /tmp/rootfs-squashfs/rom
+	sudo mkdir /tmp/rootfs-squashfs/overlay
 
-all: $(SQUASHFS_FILES)
+	sudo mksquashfs /tmp/rootfs-squashfs $@ -noappend
 
-rootfs-%.squashfs: artifacts/firework-agent
-	sudo mkdir -p /tmp/systemd-rootfs-$*-squashfs
-	sudo buildctl build --frontend=dockerfile.v0 \
-        --local context=. \
-        --local dockerfile=. \
-		--output type=tar \
-        --opt "filename=firework-dev/Dockerfile.$*" | sudo tar -C /tmp/systemd-rootfs-$*-squashfs -xf -
+	sudo rm -rf /tmp/rootfs-squashfs
 
-	sudo mksquashfs /tmp/systemd-rootfs-$*-squashfs $@ -noappend
+rootfs.deb.squashfs: artifacts/firework-agent
+	sudo mkdir -p /tmp/rootfs-squashfs
+	sudo cp -r firework-dev/debian-bookworm-rootfs/* /tmp/rootfs-squashfs
 
-	sudo rm -f /tmp/systemd-rootfs-$*-squashfs.tar
-	sudo rm -rf /tmp/systemd-rootfs-$*-squashfs
+	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/init
+	sudo cp firework-dev/overlay-init /tmp/rootfs-squashfs/sbin/overlay-init
+
+	# sudo mkdir /tmp/rootfs-squashfs/mnt
+	sudo mkdir /tmp/rootfs-squashfs/rom
+	sudo mkdir /tmp/rootfs-squashfs/overlay
+
+	sudo mksquashfs /tmp/rootfs-squashfs $@ -noappend
+
+	sudo rm -rf /tmp/rootfs-squashfs
 
 cleanup:
 	sudo rm -f /tmp/systemd-rootfs-*-squashfs.tar
 	sudo rm -rf /tmp/systemd-rootfs-*-squashfs
-	sudo rm -f rootfs-*.squashfs
+	sudo rm -f rootfs*.squashfs
+	sudo rm -rf /tmp/rootfs-squashfs
 
-install: firework-rootfs-dir
-	sudo cp rootfs-*.squashfs /var/lib/firework/rootfs
+install: firework-rootfs-dir rootfs.squashfs
+	# sudo cp rootfs.deb.squashfs /var/lib/firework/rootfs
+	sudo cp rootfs.squashfs /var/lib/firework/rootfs
 
 firework-rootfs-dir:
 	sudo mkdir -p /var/lib/firework/rootfs
 
 artifacts/firework-agent: artifacts
-	cargo build -p fwagent --release
-	cp target/release/fwagent artifacts/firework-agent
+	cargo build --target x86_64-unknown-linux-musl -p fwagent --release
+	cp target/x86_64-unknown-linux-musl/release/fwagent artifacts/firework-agent
+
+artifacts/init: artifacts
+	cargo build -p init --release
+	cp target/release/init artifacts/init
 
 artifacts:
 	mkdir -p artifacts

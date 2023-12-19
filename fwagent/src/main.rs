@@ -12,8 +12,8 @@ use std::process::Command;
 use std::sync::mpsc;
 
 use nom::bytes::complete::tag;
-use nom::sequence::{preceded, terminated, tuple};
 use nom::character::complete::u16;
+use nom::sequence::{preceded, terminated, tuple};
 
 use ptyca::{openpty, PtyCommandExt};
 
@@ -31,6 +31,7 @@ struct Metadata {
 }
 
 pub fn log_init() {
+    println!("WEFJWEJFIOJWIOEFJIOWE");
     let level = env::var("LOG_FILTER").unwrap_or_else(|_| "init=debug".into());
 
     env_logger::builder()
@@ -43,6 +44,8 @@ pub fn log_init() {
 fn main() -> Result<(), anyhow::Error> {
     log_init();
 
+    println!("before IP");
+
     // Use HTTP client (reqwest) to call Firecracker MMDS endpoint to retrieve metadata that contains the CID for the vsock listener.
     // First it must call the token endpoint (/latest/api/token) with PUT method and X-metadata-token-ttl-seconds header to issue a session token.
     // Then the token is used in the X-metadata-token header to make a call to latest/meta-data endpoint.
@@ -50,7 +53,7 @@ fn main() -> Result<(), anyhow::Error> {
     let addr = "169.254.169.254";
 
     // Add route to MMDS.
-    let mut cmd = Command::new("ip");
+    let mut cmd = Command::new("/sbin/ip");
     cmd.args(["route", "add", addr, "dev", "eth0"]).output()?;
 
     let client = reqwest::blocking::Client::new();
@@ -76,8 +79,11 @@ fn main() -> Result<(), anyhow::Error> {
         .collect::<Vec<String>>()
         .join("\n");
 
+    println!("HERE 1");
     // Enable packet forwarding and set /etc/hosts.
     fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
+
+    println!("HERE 2");
     fs::write("/etc/hosts", hosts_string)?;
 
     // Set standard PATH env variable.
@@ -87,9 +93,8 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     sethostname(metadata.hostname.as_bytes())?;
-    
-    let listener =
-        VsockListener::bind_with_cid_port(metadata.cid, 10000)?;
+
+    let listener = VsockListener::bind_with_cid_port(metadata.cid, 10000)?;
 
     for stream in listener.incoming() {
         std::thread::spawn(|| {
@@ -128,7 +133,7 @@ fn handle_conn(mut writer: VsockStream) -> Result<(), Box<dyn std::error::Error>
     let (primary, secondary) = openpty()?;
     let primary_raw_fd = primary.as_raw_fd();
 
-    let mut cmd = Command::new("bash");
+    let mut cmd = Command::new("sh");
     cmd.arg("-i");
     cmd.envs(env::vars());
 

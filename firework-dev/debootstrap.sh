@@ -7,7 +7,7 @@ cd $script_dir
 
 rootfs_base="debian-bookworm-rootfs-systemd"
 squashfs_img="rootfs.squashfs"
-packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git gnupg systemd"
+packages="procps iproute2 ca-certificates curl dnsutils iptables iputils-ping cpu-checker git gnupg"
 archive="debian-bookworm-rootfs.tar.gz"
 
 # mkdir -p "$rootfs_base"
@@ -33,5 +33,5 @@ function debootstrap_rootfs {
 echo "Creating debian bookworm rootfs using debootstrap..."
 time debootstrap_rootfs &> /dev/null
 
-echo "Creating compressed tar archive of the rootfs..."
-time tar -czvf "$archive" -C "$rootfs_base" . &> /dev/null
+# echo "Creating compressed tar archive of the rootfs..."
+# time tar -czvf "$archive" -C "$rootfs_base" . &> /dev/null
