@@ -1,6 +1,7 @@
 *.squashfs
 systemd-*
 kernel
+.env
 
 firework
 debian-bookworm*

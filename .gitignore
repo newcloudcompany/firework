@@ -11,3 +11,4 @@ rootfs.tar
 fwagent
 artifacts
 firework-agent
+.env
