@@ -1,5 +1,0 @@
-linux-*
-vmlinux*
-.bin
-/target
-/init*

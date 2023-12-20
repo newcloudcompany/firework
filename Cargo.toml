@@ -3,5 +3,7 @@ members = [
     "init",
     "fwagent",
     "vsock-client",
-    "ptyca"
+    "ptyca",
 ]
+
+resolver = "2"
