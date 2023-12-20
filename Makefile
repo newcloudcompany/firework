@@ -1,10 +1,11 @@
 all: rootfs.squashfs
 
-rootfs.squashfs: artifacts/firework-agent
+rootfs.squashfs: artifacts/firework-agent artifacts/init
 	sudo mkdir -p /tmp/rootfs-squashfs
 	sudo ./firework-dev/alpine-make-rootfs -p iputils -p iproute2 /tmp/rootfs-squashfs
 
-	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/init
+	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/firework-agent
+	sudo cp artifacts/init /tmp/rootfs-squashfs/init
 	sudo cp firework-dev/overlay-init /tmp/rootfs-squashfs/sbin/overlay-init
 	
 	sudo mkdir /tmp/rootfs-squashfs/mnt
@@ -19,8 +20,9 @@ rootfs.deb.squashfs: artifacts/firework-agent
 	sudo mkdir -p /tmp/rootfs-squashfs
 	sudo cp -r firework-dev/debian-bookworm-rootfs/* /tmp/rootfs-squashfs
 
-	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/init
+	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/firework-agent
 	sudo cp firework-dev/overlay-init /tmp/rootfs-squashfs/sbin/overlay-init
+	sudo cp firework-dev/init /tmp/rootfs-squashfs/sbin/init
 
 	# sudo mkdir /tmp/rootfs-squashfs/mnt
 	sudo mkdir /tmp/rootfs-squashfs/rom
@@ -48,8 +50,8 @@ artifacts/firework-agent: artifacts
 	cp target/x86_64-unknown-linux-musl/release/fwagent artifacts/firework-agent
 
 artifacts/init: artifacts
-	cargo build -p init --release
-	cp target/release/init artifacts/init
+	cargo build --target x86_64-unknown-linux-musl -p init --release
+	cp target/x86_64-unknown-linux-musl/release/init artifacts/init
 
 artifacts:
 	mkdir -p artifacts

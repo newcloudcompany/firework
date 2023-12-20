@@ -31,7 +31,6 @@ struct Metadata {
 }
 
 pub fn log_init() {
-    println!("WEFJWEJFIOJWIOEFJIOWE");
     let level = env::var("LOG_FILTER").unwrap_or_else(|_| "init=debug".into());
 
     env_logger::builder()
@@ -43,8 +42,6 @@ pub fn log_init() {
 
 fn main() -> Result<(), anyhow::Error> {
     log_init();
-
-    println!("before IP");
 
     // Use HTTP client (reqwest) to call Firecracker MMDS endpoint to retrieve metadata that contains the CID for the vsock listener.
     // First it must call the token endpoint (/latest/api/token) with PUT method and X-metadata-token-ttl-seconds header to issue a session token.
@@ -79,11 +76,8 @@ fn main() -> Result<(), anyhow::Error> {
         .collect::<Vec<String>>()
         .join("\n");
 
-    println!("HERE 1");
     // Enable packet forwarding and set /etc/hosts.
     fs::write("/proc/sys/net/ipv4/conf/all/forwarding", "1")?;
-
-    println!("HERE 2");
     fs::write("/etc/hosts", hosts_string)?;
 
     // Set standard PATH env variable.

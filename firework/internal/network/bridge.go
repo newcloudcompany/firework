@@ -24,7 +24,7 @@ func createTapDevice(name string) (*netlink.Tuntap, error) {
 	la.Name = name
 	dev := &netlink.Tuntap{
 		LinkAttrs: la,
-		Mode:      0,
+		Mode:      netlink.TUNTAP_MODE_TAP,
 	}
 
 	if err := netlink.LinkAdd(dev); err != nil {
@@ -51,7 +51,7 @@ func NewBridgeNetwork(subnetCidr string, gateway string) (*BridgeNetwork, error)
 		}
 
 		// Get the IP address of the bridge
-		addrs, err := netlink.AddrList(br, 0)
+		addrs, err := netlink.AddrList(br, netlink.FAMILY_V4)
 		if err != nil || len(addrs) == 0 {
 			return nil, fmt.Errorf("failed to get IP address of bridge %s: %w", VM_BRIDGE_NAME, err)
 		}
