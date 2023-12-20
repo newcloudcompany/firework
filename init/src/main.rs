@@ -1,6 +1,5 @@
 use std::{
-    borrow::Borrow,
-    env, io, mem,
+    env, io,
     process::{Command, Stdio},
     sync::mpsc::{self},
     thread::{self},
@@ -33,6 +32,7 @@ pub fn log_init() {
 fn notify(signals: &[c_int]) -> anyhow::Result<mpsc::Receiver<c_int>> {
     let (tx, rx) = mpsc::channel();
     let mut signals = signal_hook::iterator::Signals::new(signals)?;
+
     thread::spawn(move || {
         for signal in signals.forever() {
             if tx.send(signal).is_err() {
@@ -40,6 +40,7 @@ fn notify(signals: &[c_int]) -> anyhow::Result<mpsc::Receiver<c_int>> {
             }
         }
     });
+
     Ok(rx)
 }
 
