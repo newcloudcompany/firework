@@ -1,0 +1,55 @@
+time=2023-12-21T17:14:35.627+09:00 level=DEBUG msg="Prepared environment for execution."
+time=2023-12-21T17:14:35.627+09:00 level=DEBUG msg="Read config.json." config="{Nodes:[{Name:ctrl Vcpu:2 Memory:4096 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:32G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:14:36.827+09:00 level=DEBUG msg="Created and populated IPAM database."
+time=2023-12-21T17:14:36.834+09:00 level=DEBUG msg="Created a bridge network." cidr=172.18.0.240/28
+time=2023-12-21T17:14:36.834+09:00 level=DEBUG msg="Created VMM log fifo" path=/var/lib/firework/vmm.log
+time=2023-12-21T17:14:36.834+09:00 level=INFO msg="Generated CID" node=ctrl cid=437
+time=2023-12-21T17:14:36.834+09:00 level=INFO msg="Generated ID" node=ctrl id=365bab18-8ff6-4c4b-8b63-cefb5ac2450a
+time=2023-12-21T17:14:36.974+09:00 level=INFO msg="Allocated free IP address" node=ctrl addr=172.18.0.242/28
+time=2023-12-21T17:14:37.233+09:00 level=DEBUG msg="Created and added the machine config to the machine group"
+time=2023-12-21T17:14:37.233+09:00 level=DEBUG msg="Created machine group from config:" config="{Nodes:[{Name:ctrl Vcpu:2 Memory:4096 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:32G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:14:37.233+09:00 level=DEBUG msg="Installing SIGTERM and SIGINT signal handlers."
+time=2023-12-21T17:14:37.267+09:00 level=DEBUG msg="Machine started with" name=ctrl vmId=365bab18-8ff6-4c4b-8b63-cefb5ac2450a pid=94378
+time=2023-12-21T17:14:58.393+09:00 level=INFO msg="Caught signal: %s, requesting clean shutdown" !BADKEY=interrupt
+time=2023-12-21T17:14:58.429+09:00 level=INFO msg="Graceful shutdown successful."
+time=2023-12-21T17:15:03.117+09:00 level=DEBUG msg="Prepared environment for execution."
+time=2023-12-21T17:15:03.118+09:00 level=DEBUG msg="Read config.json." config="{Nodes:[{Name:ctrl Vcpu:2 Memory:4096 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:32G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:15:04.233+09:00 level=DEBUG msg="Created and populated IPAM database."
+time=2023-12-21T17:15:04.240+09:00 level=DEBUG msg="Created a bridge network." cidr=172.18.0.240/28
+time=2023-12-21T17:15:04.241+09:00 level=DEBUG msg="Created VMM log fifo" path=/var/lib/firework/vmm.log
+time=2023-12-21T17:15:04.241+09:00 level=INFO msg="Generated CID" node=ctrl cid=141
+time=2023-12-21T17:15:04.241+09:00 level=INFO msg="Generated ID" node=ctrl id=171cce60-b4fe-4fe9-8b89-bb1e250ff36f
+time=2023-12-21T17:15:04.379+09:00 level=INFO msg="Allocated free IP address" node=ctrl addr=172.18.0.242/28
+time=2023-12-21T17:15:04.701+09:00 level=DEBUG msg="Created and added the machine config to the machine group"
+time=2023-12-21T17:15:04.701+09:00 level=DEBUG msg="Created machine group from config:" config="{Nodes:[{Name:ctrl Vcpu:2 Memory:4096 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:32G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:15:04.701+09:00 level=DEBUG msg="Installing SIGTERM and SIGINT signal handlers."
+time=2023-12-21T17:15:04.736+09:00 level=DEBUG msg="Machine started with" name=ctrl vmId=171cce60-b4fe-4fe9-8b89-bb1e250ff36f pid=94568
+time=2023-12-21T17:15:06.780+09:00 level=INFO msg="Caught signal: %s, requesting clean shutdown" !BADKEY=interrupt
+time=2023-12-21T17:15:06.815+09:00 level=INFO msg="Graceful shutdown successful."
+time=2023-12-21T17:15:17.852+09:00 level=DEBUG msg="Prepared environment for execution."
+time=2023-12-21T17:15:17.853+09:00 level=DEBUG msg="Read config.json." config="{Nodes:[{Name:ctrl Vcpu:2 Memory:4096 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:32G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:15:20.171+09:00 level=DEBUG msg="Created and populated IPAM database."
+time=2023-12-21T17:15:20.184+09:00 level=DEBUG msg="Created a bridge network." cidr=172.18.0.240/28
+time=2023-12-21T17:15:20.184+09:00 level=DEBUG msg="Created VMM log fifo" path=/var/lib/firework/vmm.log
+time=2023-12-21T17:15:20.184+09:00 level=INFO msg="Generated CID" node=ctrl cid=442
+time=2023-12-21T17:15:20.184+09:00 level=INFO msg="Generated ID" node=ctrl id=52ace31e-4d37-4c75-871b-55abff96e4e4
+time=2023-12-21T17:15:20.318+09:00 level=INFO msg="Allocated free IP address" node=ctrl addr=172.18.0.242/28
+time=2023-12-21T17:15:20.583+09:00 level=DEBUG msg="Created and added the machine config to the machine group"
+time=2023-12-21T17:15:20.583+09:00 level=DEBUG msg="Created machine group from config:" config="{Nodes:[{Name:ctrl Vcpu:2 Memory:4096 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:32G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:15:20.583+09:00 level=DEBUG msg="Installing SIGTERM and SIGINT signal handlers."
+time=2023-12-21T17:15:20.616+09:00 level=DEBUG msg="Machine started with" name=ctrl vmId=52ace31e-4d37-4c75-871b-55abff96e4e4 pid=94784
+time=2023-12-21T17:16:23.470+09:00 level=INFO msg="Caught signal: %s, requesting clean shutdown" !BADKEY=terminated
+time=2023-12-21T17:16:23.504+09:00 level=INFO msg="Graceful shutdown successful."
+time=2023-12-21T17:18:02.363+09:00 level=DEBUG msg="Prepared environment for execution."
+time=2023-12-21T17:18:02.363+09:00 level=DEBUG msg="Read config.json." config="{Nodes:[{Name:ctrl Vcpu:1 Memory:2048 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:4G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:18:04.569+09:00 level=DEBUG msg="Created and populated IPAM database."
+time=2023-12-21T17:18:04.579+09:00 level=DEBUG msg="Created a bridge network." cidr=172.18.0.240/28
+time=2023-12-21T17:18:04.579+09:00 level=DEBUG msg="Created VMM log fifo" path=/var/lib/firework/vmm.log
+time=2023-12-21T17:18:04.579+09:00 level=INFO msg="Generated CID" node=ctrl cid=183
+time=2023-12-21T17:18:04.579+09:00 level=INFO msg="Generated ID" node=ctrl id=f6c3f7b8-0e8f-4ae2-8680-3f59cae9aeaf
+time=2023-12-21T17:18:04.716+09:00 level=INFO msg="Allocated free IP address" node=ctrl addr=172.18.0.242/28
+time=2023-12-21T17:18:04.955+09:00 level=DEBUG msg="Created and added the machine config to the machine group"
+time=2023-12-21T17:18:04.955+09:00 level=DEBUG msg="Created machine group from config:" config="{Nodes:[{Name:ctrl Vcpu:1 Memory:2048 RootFsPath:/var/lib/firework/rootfs/rootfs.alp.squashfs Disk:4G}] SubnetCidr:172.18.0.240/28 Gateway:172.18.0.241/28}"
+time=2023-12-21T17:18:04.955+09:00 level=DEBUG msg="Installing SIGTERM and SIGINT signal handlers."
+time=2023-12-21T17:18:04.986+09:00 level=DEBUG msg="Machine started with" name=ctrl vmId=f6c3f7b8-0e8f-4ae2-8680-3f59cae9aeaf pid=96200
+time=2023-12-21T17:18:12.337+09:00 level=INFO msg="Graceful shutdown successful."

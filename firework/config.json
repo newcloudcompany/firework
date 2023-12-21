@@ -4,10 +4,10 @@
     "nodes": [
         {
             "name": "ctrl",
-            "vcpu": 2,
-            "memory": 4096,
-            "rootfs_path": "/var/lib/firework/rootfs/rootfs.squashfs",
-            "disk": "32G"
+            "vcpu": 1,
+            "memory": 2048,
+            "rootfs_path": "/var/lib/firework/rootfs/rootfs.alp.squashfs",
+            "disk": "4G"
         }
     ]
 }

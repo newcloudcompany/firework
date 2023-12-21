@@ -6,8 +6,6 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"os/exec"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/jlkiri/firework/internal/config"
@@ -37,19 +35,6 @@ func NewStartCommand() *cobra.Command {
 
 func runStart(isDaemon bool) error {
 	defer cleanup()
-
-	if isDaemon {
-		cmd := exec.Command("firework", "start")
-		cmd.Env = os.Environ()
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setsid: true,
-		}
-
-		if err := cmd.Start(); err != nil {
-			return err
-		}
-		return nil
-	}
 
 	// TODO: Remove this
 	os.Remove(config.DbPath)
@@ -147,7 +132,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			return nil, err
 		}
 
-		_, err = createStdioWriter(id)
+		stdio, err := createStdioWriter(id)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +144,7 @@ func createMachineGroup(ctx context.Context, nodes []config.Node, bridge *networ
 			SocketPath:            socketPath,
 			InstanceLogFifoPath:   logFifoPath,
 			InstanceFifoLogWriter: fifoLogWriter,
-			Stdio:                 os.Stdout,
+			Stdio:                 stdio,
 			MetricsFifoPath:       metricsFifoPath,
 			OverlayDrivePath:      overlayDrivePath,
 			VmmLogPath:            config.VmmLogPath,

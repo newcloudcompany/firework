@@ -1,12 +1,15 @@
 all: rootfs.squashfs
 
-rootfs.squashfs: artifacts/firework-agent artifacts/init
+rootfs.alp.squashfs: artifacts/firework-agent artifacts/init
 	sudo mkdir -p /tmp/rootfs-squashfs
-	sudo ./firework-dev/alpine-make-rootfs -p iputils -p iproute2 /tmp/rootfs-squashfs
+	# sudo cp -r firework-dev/alpine-rootfs/* /tmp/rootfs-squashfs
+	sudo firework-dev/alpine-make-rootfs.sh --branch 3.18 /tmp/rootfs-squashfs
 
 	sudo cp artifacts/firework-agent /tmp/rootfs-squashfs/firework-agent
 	sudo cp artifacts/init /tmp/rootfs-squashfs/init
 	sudo cp firework-dev/overlay-init /tmp/rootfs-squashfs/sbin/overlay-init
+
+	echo "nameserver 8.8.8.8" | sudo tee /tmp/rootfs-squashfs/etc/resolv.conf
 	
 	sudo mkdir /tmp/rootfs-squashfs/mnt
 	sudo mkdir /tmp/rootfs-squashfs/rom
@@ -33,14 +36,12 @@ rootfs.deb.squashfs: artifacts/firework-agent
 	sudo rm -rf /tmp/rootfs-squashfs
 
 cleanup:
-	sudo rm -f /tmp/systemd-rootfs-*-squashfs.tar
-	sudo rm -rf /tmp/systemd-rootfs-*-squashfs
 	sudo rm -f rootfs*.squashfs
 	sudo rm -rf /tmp/rootfs-squashfs
 
-install: firework-rootfs-dir rootfs.squashfs
+install: firework-rootfs-dir rootfs.alp.squashfs
 	# sudo cp rootfs.deb.squashfs /var/lib/firework/rootfs
-	sudo cp rootfs.squashfs /var/lib/firework/rootfs
+	sudo cp rootfs.alp.squashfs /var/lib/firework/rootfs
 
 firework-rootfs-dir:
 	sudo mkdir -p /var/lib/firework/rootfs

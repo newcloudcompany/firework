@@ -135,7 +135,6 @@ func (mg *MachineGroup) Wait(ctx context.Context) error {
 
 func (mg *MachineGroup) Shutdown(ctx context.Context) error {
 	for _, m := range mg.machines {
-		// info := m.inner.DescribeInstanceInfo()
 		if err := m.inner.Shutdown(ctx); err != nil {
 			return err
 		}
