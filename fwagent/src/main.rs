@@ -2,6 +2,8 @@
 extern crate log;
 
 use std::collections::HashMap;
+use std::net::{SocketAddr, TcpListener};
+use std::str::FromStr;
 use std::{env, fs};
 
 use std::fs::File;
@@ -31,7 +33,7 @@ struct Metadata {
 }
 
 pub fn log_init() {
-    let level = env::var("LOG_FILTER").unwrap_or_else(|_| "init=debug".into());
+    let level = env::var("LOG_FILTER").unwrap_or_else(|_| "fwagent=debug".into());
 
     env_logger::builder()
         .parse_filters(&level)
@@ -87,6 +89,15 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     sethostname(metadata.hostname.as_bytes())?;
+
+    std::thread::spawn(|| {
+        let listener = TcpListener::bind("0.0.0.0:3000").expect("failed to bind");
+        let (mut stream, addr) = listener.accept().expect("failed to accept");
+        debug!("Healthcheck connection from {}", addr);
+        stream
+            .write_all("OK".as_bytes())
+            .expect("failed to respond");
+    });
 
     let listener = VsockListener::bind_with_cid_port(metadata.cid, 10000)?;
 

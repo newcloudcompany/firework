@@ -1,17 +1,24 @@
 package start
 
 import (
+	"os"
 	"os/exec"
 
+	units "github.com/docker/go-units"
 	"github.com/jlkiri/firework/internal/config"
 )
 
-func createOverlayDrive(vmId string, capacity string) (string, error) {
+func createOverlayDrive(vmId string, capacity int64) (string, error) {
 	path := config.OverlayDrivePath(vmId)
 
-	// Create 2GB sparse file and format it as ext4
-	_, err := exec.Command("truncate", "-s", capacity, path).CombinedOutput()
+	f, err := os.Create(path)
 	if err != nil {
+		return "", err
+	}
+
+	defer f.Close()
+
+	if err := f.Truncate(units.GiB * capacity); err != nil {
 		return "", err
 	}
 

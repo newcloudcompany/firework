@@ -11,7 +11,7 @@ type Node struct {
 	Vcpu       int64  `json:"vcpu"`
 	Memory     int64  `json:"memory"`
 	RootFsPath string `json:"rootfs_path"`
-	Disk       string `json:"disk"`
+	Disk       int64  `json:"disk"`
 }
 
 type Config struct {
