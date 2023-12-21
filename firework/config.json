@@ -7,7 +7,7 @@
             "vcpu": 1,
             "memory": 2048,
             "rootfs_path": "/var/lib/firework/rootfs/rootfs.alp.squashfs",
-            "disk": "4G"
+            "disk": 4
         }
     ]
 }

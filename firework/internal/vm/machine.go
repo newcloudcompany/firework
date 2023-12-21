@@ -78,7 +78,7 @@ func CreateMachine(ctx context.Context, opts MachineOptions) (*firecracker.Machi
 				DriveID:      firecracker.String("overlayfs"),
 				IsRootDevice: firecracker.Bool(false),
 				IsReadOnly:   firecracker.Bool(false),
-				PathOnHost:   firecracker.String(opts.OverlayDrivePath),
+				PathOnHost:   firecracker.String("/dev/sdb1"),
 			},
 		},
 		FifoLogWriter: opts.InstanceFifoLogWriter,
